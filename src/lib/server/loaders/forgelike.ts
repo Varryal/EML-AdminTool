@@ -3,9 +3,7 @@ import { NotificationCode } from '$lib/utils/notifications'
 import type { LoaderVersion } from '$lib/utils/types'
 import { getOrSet } from '../cache'
 import { ILoaderFormat, ILoaderType } from '$lib/utils/db'
-import { fetchJson, fetchXml, getRemoteFileSha1, getRemoteFileSize } from './utils'
-import type { LoaderFormat } from '@prisma/client'
-import type { File as File_ } from '../../utils/types'
+import { fetchJson, fetchXml } from './utils'
 import { getMajorVersion } from '$lib/utils/utils'
 
 type ForgeLikeLoader = typeof ILoaderType.FORGE | typeof ILoaderType.NEOFORGE

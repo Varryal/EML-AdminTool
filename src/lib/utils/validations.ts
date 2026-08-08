@@ -197,13 +197,6 @@ export const loaderSchema = z.object({
   customLoaderVersionSha1: z.string().nullable().optional(),
 })
 
-export const customLoaderSchema = z.object({
-  profileId: z.string(),
-  type: z.enum(ILoaderType),
-  patchLog4Shell: z.boolean(),
-  customLoaderVersionSha1: z.string().min(64, NotificationCode.INVALID_INPUT)
-})
-
 const platformMetadataSchema = z.object({
   mainFileName: z.string(),
   keepFiles: z.array(z.string())
