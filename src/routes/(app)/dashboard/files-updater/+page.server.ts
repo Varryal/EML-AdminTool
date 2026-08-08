@@ -340,7 +340,7 @@ export const actions: Actions = {
         const finalVersionFile = new File([finalVersion], versionFile.name, { type: 'application/json' })
         const finalVersionSha1 = await computeSha1Hash(finalVersionFile)
         const finalVersionSize = finalVersionFile.size
-        
+
         pathsToMove = new Map([...pathsToMove, ...librariesRes.pathsToMove])
         pathsToMove.delete(librariesRes.manifest.assetIndex?.sha1 ?? '')
         customVersion = librariesRes.manifest.id!
@@ -365,6 +365,8 @@ export const actions: Actions = {
           url: `{{url}}/files/loaders/${profile.slug}/versions/${customVersion}/${customVersion}.json`,
           type: 'OTHER'
         }
+
+        await deleteFile('cache', `.staging-loader-${profile.slug}.json`, false)
       }
 
       await updateLoader({ type, minecraftVersion, loaderVersion, file, customVersion }, profile.id)

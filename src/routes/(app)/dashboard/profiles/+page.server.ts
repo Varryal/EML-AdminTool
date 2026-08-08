@@ -8,10 +8,14 @@ import { profileUserPermissionsSchema, profileSchema } from '$lib/utils/validati
 import { fail } from '$lib/server/action'
 import { addProfile, getProfileById, updateProfileUserPermissions, updateProfile, deleteProfile } from '$lib/server/profile'
 import { IUserStatus, type ProfilePayload } from '$lib/utils/db'
-import { cacheFiles, deleteFile, renameFile } from '$lib/server/files'
-import { deleteLoader } from '$lib/server/loader'
+import { cacheFiles, deleteFile, renameFile, sanitizePath } from '$lib/server/files'
+import { deleteLoader, getLoader, updateLoader } from '$lib/server/loader'
 import bcrypt from 'bcrypt'
 import { ProfileVisibility } from '@prisma/client'
+import { existsSync } from 'node:fs'
+import { computeSha1Hash, getDomain } from '$lib/utils/utils'
+import fs from 'node:fs/promises'
+import path_ from 'node:path'
 
 export const load = (async (event) => {
   const user = event.locals.user
@@ -61,6 +65,7 @@ export const actions: Actions = {
   addEditProfile: async (event) => {
     const user = event.locals.user
     const session = event.cookies.get('session') ?? ''
+    const domain = getDomain(event)
 
     if (!user?.isAdmin) {
       throw error(403, { message: NotificationCode.FORBIDDEN })
@@ -143,6 +148,58 @@ export const actions: Actions = {
           await renameFile('files-updater', '', existingProfile.slug, slug, false)
           await deleteFile('cache', `files-updater-${existingProfile.slug}.json`, false)
           await cacheFiles(`files-updater/${slug}`)
+
+          const oldLoaderPath = sanitizePath('files', 'loaders', existingProfile.slug)
+
+          if (existsSync(oldLoaderPath)) {
+            await renameFile('loaders', '', existingProfile.slug, slug, false)
+
+            const loader = await getLoader(profileId)
+
+            if (loader?.customVersion) {
+              const basePath = path_.join('files', 'loaders', slug)
+              const baseUrlOld = `${domain}/files/loaders/${existingProfile.slug}`
+              const baseUrlNew = `${domain}/files/loaders/${slug}`
+
+              const versionFilePath = sanitizePath(basePath, 'versions', loader.customVersion, `${loader.customVersion}.json`)
+              let versionString = (await fs.readFile(versionFilePath, 'utf-8')).replaceAll(baseUrlOld, baseUrlNew)
+              const versionJson = JSON.parse(versionString)
+
+              if (versionJson.assetIndex?.id) {
+                const oldAssetIndexId = versionJson.assetIndex.id
+                const assetIndexFilePath = sanitizePath(basePath, 'assets', 'indexes', `${oldAssetIndexId}.json`)
+
+                if (existsSync(assetIndexFilePath)) {
+                  const assetIndexString = (await fs.readFile(assetIndexFilePath, 'utf-8')).replaceAll(baseUrlOld, baseUrlNew)
+                  const assetIndexFile = new File([assetIndexString], `${oldAssetIndexId}.json`, { type: 'application/json' })
+                  const assetIndexSha1 = await computeSha1Hash(assetIndexFile)
+
+                  versionJson.assetIndex.sha1 = assetIndexSha1
+                  versionJson.assetIndex.size = assetIndexFile.size
+                  versionJson.assetIndex.id = assetIndexSha1.slice(0, 8)
+                  versionJson.assetIndex.url = `${baseUrlNew}/assets/indexes/${assetIndexSha1.slice(0, 8)}.json`
+                  versionJson.assets = assetIndexSha1.slice(0, 8)
+
+                  await fs.writeFile(sanitizePath(basePath, 'assets', 'indexes', `${versionJson.assetIndex.id}.json`), assetIndexString)
+                  if (oldAssetIndexId !== versionJson.assetIndex.id) await fs.unlink(assetIndexFilePath)
+
+                  versionString = JSON.stringify(versionJson, null, 2)
+                }
+              }
+
+              const finalVersionFile = new File([versionString], `${loader.customVersion}.json`, { type: 'application/json' })
+              const finalVersionSha1 = await computeSha1Hash(finalVersionFile)
+              await fs.writeFile(versionFilePath, versionString)
+
+              // Mise à jour de la BDD
+              if (loader.file) {
+                ;(loader.file as any).sha1 = finalVersionSha1
+                ;(loader.file as any).size = finalVersionFile.size
+                ;(loader.file as any).url = (loader.file as any).url.replace(`/loaders/${existingProfile.slug}/`, `/loaders/${slug}/`)
+                await updateLoader(loader, profileId)
+              }
+            }
+          }
         }
 
         if (permissions) {
@@ -188,6 +245,7 @@ export const actions: Actions = {
 
       await deleteLoader(existingProfile.id)
       await deleteFile('files-updater', existingProfile.slug, false)
+      await deleteFile('loaders', existingProfile.slug, false)
       await deleteFile('cache', `files-updater-${existingProfile.slug}.json`, false)
       await deleteProfile(profileId)
     } catch (err) {
@@ -199,4 +257,5 @@ export const actions: Actions = {
     }
   }
 }
+
 

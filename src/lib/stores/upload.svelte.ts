@@ -1,7 +1,7 @@
 import { smartUpload } from '$lib/utils/uploader'
 import { invalidateAll } from '$app/navigation'
 import { addNotification } from '$lib/stores/notifications'
-import type { Context, File as File_, FileDir } from '$lib/utils/types'
+import type { File as File_ } from '$lib/utils/types'
 
 class UploadStore {
   isUploading = $state(false)
@@ -89,8 +89,7 @@ class UploadStore {
 export const filesUpdaterUploader = new UploadStore('files-updater', 'BEST_EFFORT', '', async (fileName) =>
   confirm(`File "${fileName}" already exists. Do you want to overwrite it?`)
 )
+export const customLoaderUploader = new UploadStore('.staging-loader', 'ALL_OR_NOTHING', '', async () => true)
 
 export type { UploadStore }
-
-export const customLoaderUploader = new UploadStore('.staging-loader', 'ALL_OR_NOTHING', '', async () => true)
 
