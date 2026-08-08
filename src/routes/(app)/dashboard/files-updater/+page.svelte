@@ -8,9 +8,10 @@
   import getUser from '$lib/utils/user'
   import { ILoaderFormat, ILoaderType } from '$lib/utils/db'
   import type { Loader } from '@prisma/client'
-  import { goto, invalidateAll, pushState } from '$app/navigation'
-  import { uploader } from '$lib/stores/upload.svelte'
+  import { goto } from '$app/navigation'
+  import { filesUpdaterUploader } from '$lib/stores/upload.svelte'
   import { page } from '$app/state'
+  import { getAllItemEntries } from '$lib/utils/utils'
 
   let { data }: PageProps = $props()
 
@@ -44,13 +45,6 @@
     })
   })
 
-  function handleLeave(e: any) {
-    e.preventDefault()
-    if (!e.currentTarget!.contains(e.relatedTarget)) {
-      isDragOver = false
-    }
-  }
-
   async function getData(slug: string | null = null) {
     filesReady = false
     profileSlug = slug
@@ -62,13 +56,20 @@
     filesReady = true
   }
 
+  function handleLeave(e: any) {
+    e.preventDefault()
+    if (!e.currentTarget!.contains(e.relatedTarget)) {
+      isDragOver = false
+    }
+  }
+
   async function handleDrop(e: DragEvent) {
     e.preventDefault()
     isDragOver = false
 
     if (!e.dataTransfer || e.dataTransfer.items.length === 0) return
 
-    const items = await getAllEntries(e.dataTransfer.items)
+    const items = await getAllItemEntries(e.dataTransfer.items)
     let entries: File[] = []
 
     for (const item of items) {
@@ -112,53 +113,9 @@
         files = [...files, ...optimisticFolders]
       }
 
-      uploader.startUpload(entries, currentPath, selectedProfile.slug, (newFile: File_) => {
+      filesUpdaterUploader.startUpload(entries, currentPath, selectedProfile.slug, (newFile: File_) => {
         files = [...files.filter((f) => f.name !== newFile.name || f.path !== newFile.path), newFile]
       })
-    }
-  }
-
-  async function getAllEntries(items: DataTransferItemList) {
-    let entries: FileSystemFileEntry[] = []
-    let queue: FileSystemEntry[] = []
-
-    for (let i = 0; i < items.length; i++) {
-      if (items[i]) queue.push(items[i].webkitGetAsEntry()!)
-    }
-
-    while (queue.length > 0) {
-      const entry = queue.shift()
-      if (entry) {
-        if (entry.isFile) {
-          entries.push(entry as FileSystemFileEntry)
-        } else if (entry.isDirectory) {
-          const reader = (entry as FileSystemDirectoryEntry).createReader()
-          queue.push(...(await readAllDirectoryEntries(reader)))
-        }
-      }
-    }
-
-    return entries
-  }
-
-  async function readAllDirectoryEntries(reader: FileSystemDirectoryReader) {
-    let entries = []
-    let readEntries = await readDirectoryEntries(reader)
-
-    while (readEntries.length > 0) {
-      entries.push(...readEntries)
-      readEntries = await readDirectoryEntries(reader)
-    }
-
-    return entries
-  }
-
-  async function readDirectoryEntries(reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
-    try {
-      return await new Promise((resolve, reject) => reader.readEntries(resolve, reject))
-    } catch (error) {
-      console.error(error)
-      return []
     }
   }
 
@@ -225,7 +182,7 @@
   }}
   ondragleave={handleLeave}
   ondrop={handleDrop}
-  aria-label="Files Updater Explorer"
+  aria-label="Files Updater explorer"
 >
   <h3>
     <button style="margin-right: 5px" onclick={() => getData(selectedProfile.slug)} aria-label="Refresh Files Updater"
@@ -289,15 +246,9 @@
       </div>
 
       <div>
-        <p class="label">
-          Format (auto)&nbsp;&nbsp;<i
-            class="fa-solid fa-circle-question"
-            title="This field is automatically deduced from the loader version."
-            style="cursor: help"
-          ></i>
-        </p>
+        <p class="label">Custom version</p>
         <p>
-          {data.loader.format === ILoaderFormat.INSTALLER ? 'Installer' : data.loader.format === ILoaderFormat.UNIVERSAL ? 'Universal' : 'Client'}
+          {data.loader.customVersion ?? '-'}
         </p>
       </div>
     </div>
