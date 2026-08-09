@@ -3,9 +3,8 @@ import { NotificationCode } from '$lib/utils/notifications'
 import type { LoaderVersion } from '$lib/utils/types'
 import { getOrSet } from '../cache'
 import { ILoaderFormat, ILoaderType } from '$lib/utils/db'
-import { fetchJson, fetchXml, getMajorVersion, getRemoteFileSha1, getRemoteFileSize } from './utils'
-import type { LoaderFormat } from '@prisma/client'
-import type { File as File_ } from '../../utils/types'
+import { fetchJson, fetchXml } from './utils'
+import { getMajorVersion } from '$lib/utils/utils'
 
 type ForgeLikeLoader = typeof ILoaderType.FORGE | typeof ILoaderType.NEOFORGE
 
@@ -28,7 +27,6 @@ const V = {
 
 export async function getForgeLikeVersions(loader: ForgeLikeLoader): Promise<LoaderVersion[]> {
   const cacheKey = loader === ILoaderType.FORGE ? 'forge-versions' : 'neoforge-versions'
-
   return getOrSet(cacheKey, async () => {
     const v = V[loader]
     const mavenMetadataUrl = `${v.mavenUrl}/${v.group.replace(/\./g, '/')}/${v.artifact}/maven-metadata.xml`
@@ -109,43 +107,15 @@ export async function checkForgeLikeLoader(loader: ForgeLikeLoader, minecraftVer
   }
 }
 
-export async function getForgeLikeFile(
-  loader: typeof ILoaderType.FORGE | typeof ILoaderType.NEOFORGE,
-  loaderVersion: string
-): Promise<{ format: LoaderFormat; file: File_ }> {
-  const v = V[loader]
-  let format = 'installer'
-  let ext = 'jar'
-
-  if (loader === ILoaderType.FORGE) {
-    const metaUrl = `https://files.minecraftforge.net/net/minecraftforge/forge/${loaderVersion}/meta.json`
-    const meta = (await fetchJson(metaUrl, 'Failed to fetch Forge meta')).classifiers
-    format = getFormat(meta)
-    ext = Object.keys(meta[format])[0]
-  }
-
-  const url = `${v.mavenUrl}/${v.group.replace(/\./g, '/')}/${v.artifact}/${loaderVersion}/${v.artifact}-${loaderVersion}-${format.toLowerCase()}.${ext}`
-  const name = `${v.artifact}-${loaderVersion}.${ext}`
-  const path = `versions/${v.artifact}-${loaderVersion}/`
-  const size = await getRemoteFileSize(url, 'Failed to fetch Forge artifact size')
-  const sha1 = await getRemoteFileSha1(`${url}.sha1`, 'Failed to fetch Forge artifact SHA1')
-  const type = 'OTHER' as const
-
-  return {
-    format: getTypedFormat(format),
-    file: { name, path, url, size, sha1, type }
-  }
-}
-
 function parseForgeVersion(v: string, currentMajor: string) {
   const parts = v.split('-')
-  if (parts.length >= 2 && parts[0].startsWith('1.')) {
+  if (parts.length >= 2) {
     const mcVer = parts[0]
 
     return {
       majorVersion: getMajorVersion(mcVer, currentMajor),
       minecraftVersion: mcVer,
-      forgeVersion: parts[1]
+      forgeVersion: parts.slice(1).join('-')
     }
   }
 
@@ -208,3 +178,4 @@ function getTypedFormat(format: string) {
       return ILoaderFormat.UNIVERSAL
   }
 }
+

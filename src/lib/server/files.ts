@@ -27,8 +27,9 @@ export async function getFiles(domain: string, dir: FileDir | DataDir): Promise<
  * @param dir Directory to get cached files from (including the profile slug if applicable).
  */
 export async function getCachedFiles(domain: string, dir: FileDir): Promise<string> {
-  const slug = dir.startsWith('files-updater/') ? dir.split('/')[1] : undefined
-  const cacheKey = slug ? `files-updater-${slug}` : dir
+  const base = dir.startsWith('files-updater/') || dir.startsWith('.staging') ? dir.split('/')[0] : null
+  const slug = dir.startsWith('files-updater/') || dir.startsWith('.staging') ? dir.split('/')[1] : undefined
+  const cacheKey = base && slug ? `${base}-${slug}` : dir
   const target = sanitizePath('data', 'cache', `${cacheKey}.json`)
   let cache
   try {
@@ -65,7 +66,7 @@ export async function getCachedFilesParsed(domain: string, dir: FileDir): Promis
  */
 export async function uploadFile(dir: FileDir | DataDir, path: string, file: File): Promise<void> {
   if (!file) return
-  
+
   const base = getBaseFolder(dir)
   let target, name, buffer
   try {
@@ -154,6 +155,7 @@ export async function editFile(dir: FileDir | DataDir, path: string, name: strin
 }
 
 /**
+ * Rename a file or folder within a directory.
  * @param dir Directory where the file to rename is.
  * @param path Path to the file, relative to the directory, without the file name.
  * @param name Current name of the file.
@@ -196,6 +198,47 @@ export async function renameFile(dir: FileDir | DataDir, path: string, name: str
   } catch (err) {
     console.error('Error renaming file:', err)
     throw new ServerError('Failed to rename file', err, NotificationCode.INTERNAL_SERVER_ERROR, 500)
+  }
+}
+
+/**
+ * Move a file or folder to a new location.
+ * @param oldDir Directory where the file to move is.
+ * @param oldPath Path to the file, relative to the old directory, **including** the file name.
+ * @param newDir Directory where the file should be moved to.
+ * @param newPath Path to the file, relative to the new directory, **including** the file name.
+ */
+export async function moveFile(oldDir: FileDir | DataDir, oldPath: string, newDir: FileDir | DataDir, newPath: string): Promise<void> {
+  const oldBase = getBaseFolder(oldDir)
+  const newBase = getBaseFolder(newDir)
+  let oldFullPath: string, newFullPath: string
+  try {
+    oldFullPath = sanitizePath(oldBase, oldDir, oldPath)
+    newFullPath = sanitizePath(newBase, newDir, newPath)
+  } catch (err) {
+    console.warn('Invalid path:', oldPath, newPath, err)
+    throw new BusinessError('Invalid path', NotificationCode.INVALID_REQUEST, 400)
+  }
+
+  try {
+    await fs.access(oldFullPath)
+  } catch {
+    console.warn('File does not exist:', oldFullPath)
+    throw new BusinessError('File does not exist', NotificationCode.NOT_FOUND, 404)
+  }
+
+  try {
+    await fs.mkdir(path_.dirname(newFullPath), { recursive: true })
+  } catch (err) {
+    console.error('Error creating parent directory:', err)
+    throw new ServerError('Failed to create parent directory', err, NotificationCode.INTERNAL_SERVER_ERROR, 500)
+  }
+
+  try {
+    await fs.rename(oldFullPath, newFullPath)
+  } catch (err) {
+    console.error('Error moving file:', err)
+    throw new ServerError('Failed to move file', err, NotificationCode.INTERNAL_SERVER_ERROR, 500)
   }
 }
 
@@ -245,12 +288,13 @@ export function sanitizePath(...path: string[]): string {
 
 /**
  * Generate a cache file for a directory by browsing the directory and saving the file metadata in a JSON file.
- * The cache file will be saved in `files/cache/{dir}.json`.
+ * The cache file will be saved in `data/cache/{dir}.json`.
  * @param dir Directory to generate the cache for (including the profile slug if applicable). This should be the same directory used in `getCachedFiles` and `getCachedFilesParsed`.
  */
 export async function cacheFiles(dir: FileDir): Promise<void> {
-  const slug = dir.startsWith('files-updater/') ? dir.split('/')[1] : undefined
-  const cacheKey = slug ? `files-updater-${slug}` : dir
+  const base = dir.startsWith('files-updater/') || dir.startsWith('.staging') ? dir.split('/')[0] : null
+  const slug = dir.startsWith('files-updater/') || dir.startsWith('.staging') ? dir.split('/')[1] : undefined
+  const cacheKey = base && slug ? `${base}-${slug}` : dir
   const files = await getFiles('{{url}}', dir as FileDir)
   await fs.mkdir(path_.join(root, 'data', 'cache'), { recursive: true })
   await fs.writeFile(path_.join(root, 'data', 'cache', `${cacheKey}.json`), JSON.stringify(files, null, 2))

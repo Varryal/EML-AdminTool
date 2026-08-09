@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ILoaderType } from '$lib/utils/db'
   import type { Loader, LoaderType, Profile } from '@prisma/client'
-  import type { LoaderVersion } from '$lib/utils/types'
+  import type { HashFile, LoaderVersion } from '$lib/utils/types'
   import ModalTemplate from './__ModalTemplate.svelte'
   import LoadingSplash from '../layouts/LoadingSplash.svelte'
   import { l } from '$lib/stores/language'
@@ -9,6 +9,13 @@
   import { applyAction, enhance } from '$app/forms'
   import { NotificationCode } from '$lib/utils/notifications'
   import { addNotification } from '$lib/stores/notifications'
+  import CustomLoader from '../contents/CustomLoader.svelte'
+  import { getMajorVersion } from '$lib/utils/utils'
+  import type { MissingAsset, MissingLibrary, MissingSpecialFiles } from '$lib/utils/parser'
+  import { customLoaderUploader } from '$lib/stores/upload.svelte'
+  import { callAction } from '$lib/utils/call'
+  import { invalidateAll } from '$app/navigation'
+  import Toggle from '../layouts/Toggle.svelte'
 
   interface Props {
     show: boolean
@@ -25,15 +32,35 @@
 
   let showLoader = $state(false)
 
-  let jsonLabel = $state('')
-  let jsonFile: File | null = $state(null)
-  let jarLabel = $state('')
-  let jarFile: File | null = $state(null)
+  let customize = $state(false)
+  let customLoaderStep = $state(1)
+  let customLoaderFiles: {
+    version: HashFile | null
+    assetIndex: HashFile | null
+    libs: Map<string, File>
+  } = $state({
+    version: null,
+    assetIndex: null,
+    libs: new Map<string, File>()
+  })
+  let missingLibraries: Map<string, MissingLibrary> = $state(new Map())
+  let missingSpecialFiles: MissingSpecialFiles = $state({ assetIndexJson: null, clientJar: null, clientTxt: null, loggingXml: null })
+  let missingAssets: Map<string, MissingAsset> = $state(new Map())
+  let customLoaderDisabledNext = $derived.by(() => {
+    if (customLoaderStep === 1) return !isFormValid
+    if (customLoaderStep === 2) return customLoaderFiles.version === null
+    if (customLoaderStep === 3) {
+      if (missingSpecialFiles.assetIndexJson) return !customLoaderFiles.assetIndex
+    }
+  })
+  let patchLog4Shell = $state(false)
+  let missingFilesCount = $derived.by(() => {
+    const hasAssetIndexJson = missingSpecialFiles.assetIndexJson ? 1 : 0
+    return missingLibraries.size + missingAssets.size - customLoaderFiles.libs.size - hasAssetIndexJson
+  })
 
   let type: LoaderType = $state(loader.type ?? ILoaderType.VANILLA)
-  let majorVersion = $state(
-    loader.minecraftVersion?.includes('latest') ? 'Latest' : (loader.minecraftVersion?.split('.').slice(0, 2).join('.') ?? '')
-  )
+  let majorVersion = $state(getMajorVersion(loader.minecraftVersion))
   let minecraftVersion = $state(loader.minecraftVersion ?? '')
   let loaderVersion = $state(loader.loaderVersion ?? '')
 
@@ -145,47 +172,82 @@
     if (type === ILoaderType.NEOFORGE) {
       return `Minecraft NeoForge ${majorVersion === 'Latest' || majorVersion === 'Snapshots' ? majorVersion : `${majorVersion}.x`}`
     }
+    if (type === ILoaderType.QUILT) {
+      return `Minecraft Quilt ${majorVersion === 'Latest' || majorVersion === 'Snapshots' ? majorVersion : `${majorVersion}.x`}`
+    }
     return `Minecraft Vanilla ${majorVersion === 'Latest' || majorVersion === 'Snapshots' ? majorVersion : `${majorVersion}.x`}`
   }
 
-  async function uploadFile(fileType: 'json' | 'jar') {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = fileType === 'json' ? '.json' : '.jar'
-    input.multiple = false
-
-    input.onchange = () => {
-      const files = input.files ? [input.files[0]] : []
-      if (files.length === 0) return
-
-      const label = files[0].name
-
-      switch (fileType) {
-        case 'json':
-          jsonFile = files[0]
-          jsonLabel = label
-          break
-        case 'jar':
-          jarFile = files[0]
-          jarLabel = label
-          break
-        default:
-          console.warn('Unknown file:', fileType)
+  function customLoaderNextStep() {
+    if (customLoaderStep === 1) {
+      customLoaderStep = 2
+    } else if (customLoaderStep === 2) {
+      if (missingSpecialFiles.assetIndexJson) {
+        customLoaderStep = 3
+      } else {
+        customLoaderStep = 4
       }
+    } else if (customLoaderStep === 3) {
+      customLoaderStep = 4
     }
-
-    input.click()
   }
 
-  function reset(fileType: 'json' | 'jar') {
-    if (fileType === 'json') {
-      jsonFile = null
-      jsonLabel = ''
+  function customLoaderBackStep() {
+    if (customLoaderStep === 4) {
+      if (missingSpecialFiles.assetIndexJson) {
+        customLoaderStep = 3
+      } else {
+        customLoaderStep = 2
+      }
+    } else if (customLoaderStep === 3) {
+      customLoaderStep = 2
+    } else if (customLoaderStep === 2) {
+      customLoaderStep = 1
     }
-    if (fileType === 'jar') {
-      jarFile = null
-      jarLabel = ''
+  }
+
+  async function deployCustomLoader() {
+    showLoader = true
+    if (missingFilesCount > 0) {
+      if (!confirm(`There are ${missingFilesCount} missing file(s). Are you sure you want to continue?`)) {
+        showLoader = false
+        return
+      }
     }
+    if (!customLoaderFiles.version) {
+      showLoader = false
+      return
+    }
+    const filesArray: File[] = []
+    const version = customLoaderFiles.version
+    const versionFile = new File([version.file], version.sha1, { type: version.file.type })
+    filesArray.push(versionFile)
+    if (customLoaderFiles.assetIndex) {
+      const assetIndex = customLoaderFiles.assetIndex
+      const assetIndexFile = new File([assetIndex.file], assetIndex.sha1, { type: assetIndex.file.type })
+      filesArray.push(assetIndexFile)
+    }
+    for (const [sha1, file] of customLoaderFiles.libs) {
+      const libFile = new File([file], sha1, { type: file.type })
+      filesArray.push(libFile)
+    }
+
+    await customLoaderUploader.startUpload(filesArray, version.sha1, selectedProfile.slug)
+
+    const formData = new FormData()
+    formData.set('profile-id', selectedProfile.id)
+    formData.set('type', type)
+    formData.set('minecraft-version', minecraftVersion)
+    formData.set('loader-version', loaderVersion)
+    formData.set('custom-loader-version-sha1', version.sha1)
+
+    const result = await callAction({ url: '/dashboard/files-updater', action: 'changeLoader', formData }, $l)
+    if (result.type === 'success') {
+      show = false
+      invalidateAll()
+    }
+
+    showLoader = false
   }
 
   const enhanceForm: SubmitFunction = ({ formData }) => {
@@ -215,6 +277,17 @@
       majorVersion = minecraftVersions[0]
     }
   })
+
+  $effect(() => {
+    if (!customize) {
+      customLoaderStep = 1
+      customLoaderFiles = { version: null, assetIndex: null, libs: new Map<string, File>() }
+      missingLibraries = new Map()
+      missingSpecialFiles = { assetIndexJson: null, clientJar: null, clientTxt: null, loggingXml: null }
+      missingAssets = new Map()
+      patchLog4Shell = false
+    }
+  })
 </script>
 
 <ModalTemplate size={'ml'} bind:show>
@@ -222,10 +295,10 @@
     <LoadingSplash transparent />
   {/if}
 
-  <form method="POST" action="?/changeLoader" use:enhance={enhanceForm}>
-    <h2>Change loader</h2>
+  <h2>Change loader</h2>
 
-    <div class="list-container">
+  <div class="list-container">
+    {#if !customize || customLoaderStep === 1}
       <div class="list loader-list">
         <p class="label sticky-header">Loaders</p>
         <button class="list" type="button" class:active={type === ILoaderType.VANILLA} onclick={() => switchType(ILoaderType.VANILLA)}>
@@ -237,117 +310,109 @@
         </button>
         <button class="list" type="button" class:active={type === ILoaderType.FABRIC} onclick={() => switchType(ILoaderType.FABRIC)}>Fabric</button>
         <button class="list" type="button" class:active={type === ILoaderType.QUILT} onclick={() => switchType(ILoaderType.QUILT)}>Quilt</button>
-        <!-- <button class="list" type="button" class:active={type === ILoaderType.CUSTOM} onclick={() => switchType(ILoaderType.CUSTOM)}>Custom</button> -->
       </div>
 
-      {#if type !== ILoaderType.CUSTOM}
-        <div class="list version-list">
-          {#if type === ILoaderType.FABRIC}
-            <label for="loader-version" class="sticky-header" style="z-index: 100">Loader version</label>
-            <select name="loader-version" id="loader-version" class="loader-list-select" bind:value={tempFabricLoaderVersion}>
-              {#each fabricLoaderVersions as version}
-                <option
-                  value={version}
-                  title={isOldFabricVersion(version) ? 'Old Fabric Loader version may not support recent Minecraft versions.' : ''}
-                  class:old={isOldFabricVersion(version)}>{version}</option
-                >
-              {/each}
-            </select>
-          {:else if type === ILoaderType.QUILT}
-            <label for="loader-version" class="sticky-header" style="z-index: 100">Loader version</label>
-            <select name="loader-version" id="loader-version" class="loader-list-select" bind:value={tempQuiltLoaderVersion}>
-              {#each quiltLoaderVersions as version}
-                <option value={version}>{version}</option>
-              {/each}
-            </select>
-          {/if}
-          <p class="label sticky-header" style="z-index: 100">Minecraft versions</p>
-          {#each minecraftVersions as version}
-            <button class="list" type="button" class:active={majorVersion === version} onclick={() => switchMinecraftVersion(version)}>
-              {version}
-            </button>
-          {/each}
-        </div>
-
-        <div class="list content-list">
-          <h4>{formatH4Title(type, majorVersion)}</h4>
-
-          {#each getGroupedVersions(type, visibleVersions) as group}
-            <p class="label">{group.label}</p>
-            {#each group.versions as version}
-              <button type="button" class:active={isActive(version)} onclick={() => setVersion(type, version)}>
-                {formatVersionName(version)}
-                {#if version.loaderVersion === 'latest_release' || version.loaderVersion === 'latest_snapshot'}
-                  &nbsp;&nbsp;<i class="fa-solid fa-circle-question" title={latestInfo} style="cursor: help"></i>
-                {/if}
-              </button>
-            {:else}
-              <p class="no-link">-</p>
+      <div class="list version-list">
+        {#if type === ILoaderType.FABRIC}
+          <label for="loader-version" class="sticky-header" style="z-index: 100">Loader version</label>
+          <select name="loader-version" id="loader-version" class="loader-list-select" bind:value={tempFabricLoaderVersion}>
+            {#each fabricLoaderVersions as version}
+              <option
+                value={version}
+                title={isOldFabricVersion(version) ? 'Old Fabric Loader version may not support recent Minecraft versions.' : ''}
+                class:old={isOldFabricVersion(version)}>{version}</option
+              >
             {/each}
+          </select>
+        {:else if type === ILoaderType.QUILT}
+          <label for="loader-version" class="sticky-header" style="z-index: 100">Loader version</label>
+          <select name="loader-version" id="loader-version" class="loader-list-select" bind:value={tempQuiltLoaderVersion}>
+            {#each quiltLoaderVersions as version}
+              <option value={version}>{version}</option>
+            {/each}
+          </select>
+        {/if}
+        <p class="label sticky-header" style="z-index: 100">Minecraft versions</p>
+        {#each minecraftVersions as version}
+          <button class="list" type="button" class:active={majorVersion === version} onclick={() => switchMinecraftVersion(version)}>
+            {version}
+          </button>
+        {/each}
+      </div>
+
+      <div class="list content-list">
+        <h4>{formatH4Title(type, majorVersion)}</h4>
+
+        {#each getGroupedVersions(type, visibleVersions) as group}
+          <p class="label">{group.label}</p>
+          {#each group.versions as version}
+            <button type="button" class:active={isActive(version)} onclick={() => setVersion(type, version)}>
+              {formatVersionName(version)}
+              {#if version.loaderVersion === 'latest_release' || version.loaderVersion === 'latest_snapshot'}
+                &nbsp;&nbsp;<i class="fa-solid fa-circle-question" title={latestInfo} style="cursor: help"></i>
+              {/if}
+            </button>
           {:else}
             <p class="no-link">-</p>
           {/each}
-        </div>
-      {:else}
-        <div class="list content-list">
-          <h4>Custom Loader</h4>
-          <p class="desc">You can upload your own version of Minecraft here (modified with MCP, for example).</p>
-          <ol style="margin-top: 5px; color: #505050; margin-bottom: 5px; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-            <li>
-              Upload your custom <code>&lt;version&gt;.json</code> file, with the same format as Vanilla or Forge Minecraft's
-              <code>&lt;version&gt;.json</code>
-              (example
-              <a
-                href="https://piston-meta.mojang.com/v1/packages/30bb79802dcf36de95322ef6a055960c88131d2b/1.21.11.json"
-                target="_blank"
-                rel="noopener noreferrer">here</a
-              >).
-            </li>
-            <li>Upload your modified <code>&lt;version&gt;.jar</code>.</li>
-            <li>
-              If needed, you can also upload other files required by you custom version via the Files Updater interface. Ensure de strictly following
-              the required format of your <code>&lt;version&gt;.json</code> file. You may need to create a <code>libraries/</code>,
-              <code>assets/</code>, or other folders as specified in your JSON file.
-            </li>
-          </ol>
+        {:else}
+          <p class="no-link">-</p>
+        {/each}
+      </div>
+    {:else if customLoaderStep > 1}
+      <div class="list content-list">
+        <p class="label" style="margin-top: 0;">Selected base version</p>
+        <p style="margin: 0;">{formatVersionName({ minecraftVersion, loaderVersion, majorVersion, type: ['default'] })}</p>
+        <CustomLoader
+          bind:customLoaderStep
+          bind:customLoaderFiles
+          bind:missingLibraries
+          bind:missingSpecialFiles
+          bind:missingAssets
+          bind:patchLog4Shell
+          {missingFilesCount}
+        />
+      </div>
+    {/if}
+  </div>
 
-          <p class="label" style="margin-top: 20px"><i class="fa-solid fa-bars-staggered"></i>&nbsp;&nbsp;version.json</p>
-          {#if !jsonFile}
-            <button type="button" class="secondary upload" onclick={() => uploadFile('json')}>
-              <i class="fa-solid fa-file-arrow-up"></i>&nbsp;&nbsp;Select file...
-            </button>
-          {:else}
-            <p class="no-link">{jsonLabel}</p>
-            <button type="button" class="remove" onclick={() => reset('json')} aria-label="Remove version.json">
-              <i class="fa-solid fa-circle-xmark"></i>
-            </button>
-          {/if}
-
-          <p class="label" style="margin-top: 20px"><i class="fa-brands fa-java"></i>&nbsp;&nbsp;version.jar</p>
-          {#if !jarFile}
-            <button type="button" class="secondary upload" onclick={() => uploadFile('jar')}>
-              <i class="fa-solid fa-file-arrow-up"></i>&nbsp;&nbsp;Select file...
-            </button>
-          {:else}
-            <p class="no-link">{jarLabel}</p>
-            <button type="button" class="remove" onclick={() => reset('jar')} aria-label="Remove version.jar">
-              <i class="fa-solid fa-circle-xmark"></i>
-            </button>
-          {/if}
-        </div>
-      {/if}
+  <div class="actions">
+    <div class="customize">
+      <Toggle bind:status={customize} text={['Customize the selected version', 'Customize the selected version']} />
     </div>
-
-    <div class="actions">
+    {#if customize}
       <button type="button" class="secondary" onclick={() => (show = false)}>{$l.common.cancel}</button>
-      <button type="submit" class="primary" disabled={!isFormValid}>{$l.common.save}</button>
-    </div>
-  </form>
+      <button type="button" class="secondary" disabled={customLoaderStep === 1} onclick={customLoaderBackStep}>{$l.common.back}</button>
+      {#if customLoaderStep !== 4}
+        <button type="button" class="primary" disabled={customLoaderDisabledNext} onclick={customLoaderNextStep}>{$l.common.next}</button>
+      {:else}
+        <button type="submit" class="primary" onclick={deployCustomLoader}>{$l.common.save}</button>
+      {/if}
+    {:else}
+      <form method="POST" action="?/changeLoader" use:enhance={enhanceForm}>
+        <button type="button" class="secondary" onclick={() => (show = false)}>{$l.common.cancel}</button>
+        <button type="submit" class="primary" disabled={!isFormValid}>{$l.common.save}</button>
+      </form>
+    {/if}
+  </div>
 </ModalTemplate>
 
 <style lang="scss">
   @use '../../../static/scss/modals.scss';
   @use '../../../static/scss/list.scss';
+
+  div.customize {
+    margin-top: 35px;
+    margin-right: auto;
+    float: left;
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.8;
+      display: inline-block;
+    }
+  }
 
   p.sticky-header,
   label.sticky-header {

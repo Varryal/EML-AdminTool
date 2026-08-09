@@ -34,7 +34,7 @@ export interface File {
    */
   size?: number
   /**
-   * The SHA1 hash of the file.
+   * The SHA-1 hash of the file.
    */
   sha1?: string
   /**
@@ -61,9 +61,14 @@ export interface File {
   type: 'JAVA' | 'ASSET' | 'LIBRARY' | 'NATIVE' | 'MOD' | 'CONFIG' | 'BOOTSTRAP' | 'BACKGROUND' | 'FOLDER' | 'IMAGE' | 'OTHER'
 }
 
-export type FileDir = 'files-updater' | 'loader' | 'bootstraps' | 'backgrounds' | 'images' | 'cache' | `files-updater/${string}`
+export interface HashFile {
+  file: globalThis.File
+  sha1: string
+}
+
+export type FileDir = 'files-updater' | 'loaders' | 'bootstraps' | 'backgrounds' | 'images' | 'cache' | `files-updater/${string}` | `loaders/${string}` | `.staging-loader/${string}`
 export type DataDir = 'cache' | 'crash-reports'
-export type Context = `files-updater/${string}` | 'bootstraps' | 'backgrounds' | 'images'
+export type Context = `files-updater/${string}` | `loaders/${string}` | `.staging-loader/${string}` | 'bootstraps' | 'backgrounds' | 'images'
 
 export interface LoaderVersion {
   majorVersion: string
