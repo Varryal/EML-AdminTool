@@ -34,7 +34,7 @@
 </script>
 
 <ModalTemplate size="l" bind:show>
-  <form method="POST" action="?/saveOptionalMods" use:enhance={submit}>
+  <form class="mods-form" method="POST" action="?/saveOptionalMods" use:enhance={submit}>
     <header class="modal-header">
       <div>
         <h2><i class="fa-solid fa-puzzle-piece"></i>&nbsp; Mods · {selectedProfile.name}</h2>
@@ -88,11 +88,12 @@
 <style lang="scss">
   @use '../../../static/scss/modals.scss';
 
-  .modal-header { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 18px; }
+  .mods-form { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .modal-header { flex: none; display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 18px; }
   h2 { margin: 0 0 6px; }
   .modal-header p { margin: 0; color: var(--text-secondary-color, #6b7280); }
   .count { flex: none; padding: 7px 10px; border-radius: 999px; background: var(--secondary-color, #f1f3f5); color: var(--text-secondary-color, #6b7280); font-size: .85rem; white-space: nowrap; }
-  .mod-list { display: flex; flex-direction: column; gap: 8px; max-height: min(58vh, 620px); overflow-y: auto; padding: 2px 4px 2px 2px; }
+  .mod-list { flex: 1 1 auto; min-height: 0; height: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding: 2px 4px 2px 2px; }
   .mod-row { display: grid; grid-template-columns: 38px minmax(180px, 1.4fr) minmax(150px, .8fr) 84px 84px; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--background-color, #fff); transition: border-color .15s, background .15s; }
   .mod-row.optional { border-color: color-mix(in srgb, var(--primary-color) 55%, var(--border-color)); background: color-mix(in srgb, var(--primary-color) 5%, transparent); }
   .mod-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 7px; color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 12%, transparent); }
@@ -109,6 +110,7 @@
   .switch input:checked + .switch-ui::after { transform: translateX(14px); }
   .switch input:focus-visible + .switch-ui { outline: 2px solid var(--primary-color); outline-offset: 2px; }
   .switch.disabled { opacity: .42; cursor: not-allowed; }
+  .actions { flex: none; margin-top: 14px; }
   .hint { margin: 12px 2px 0; color: var(--text-secondary-color, #6b7280); font-size: .82rem; }
   .empty { display: grid; justify-items: center; gap: 8px; padding: 45px 20px; border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-secondary-color, #6b7280); }
   .empty i { font-size: 2rem; color: var(--primary-color); }
