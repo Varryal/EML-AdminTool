@@ -5,7 +5,7 @@ import { error, redirect, type Actions } from '@sveltejs/kit'
 import { fail } from '$lib/server/action'
 import { NotificationCode } from '$lib/utils/notifications'
 import { createFileSchema, editFileSchema, renameFileSchema, loaderSchema, deleteFilesSchema } from '$lib/utils/validations'
-import { cacheFiles, createFile, deleteFile, editFile, getCachedFilesParsed, getFiles, moveFile, renameFile, sanitizePath } from '$lib/server/files'
+import { cacheFiles, createFile, deleteFile, editFile, getCachedFilesParsed, getFiles, moveFile, renameFile, sanitizePath, saveOptionalModMetadata } from '$lib/server/files'
 import { BusinessError, ServerError } from '$lib/utils/errors'
 import { db } from '$lib/server/db'
 import { ILoaderType } from '$lib/utils/db'
@@ -240,6 +240,28 @@ export const actions: Actions = {
 
       console.error('Unknown error:', err)
       throw error(500, { message: NotificationCode.INTERNAL_SERVER_ERROR })
+    }
+  },
+
+  saveOptionalMods: async (event) => {
+    const domain = getDomain(event)
+    const user = event.locals.user
+    if (!user) throw error(401, { message: NotificationCode.UNAUTHORIZED })
+    const form = await event.request.formData()
+    const profileId = form.get('profile-id')
+    const rawMetadata = form.get('metadata')
+    if (typeof profileId !== 'string' || typeof rawMetadata !== 'string') return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+    try {
+      const profile = await resolveProfile(profileId, user.id, user.isAdmin, 1)
+      const metadata = JSON.parse(rawMetadata) as Record<string, import('$lib/utils/types').OptionalModMetadata>
+      const currentFiles = await getFiles(domain, `files-updater/${profile.slug}` as FileDir)
+      await saveOptionalModMetadata(profile.slug, metadata, currentFiles)
+      await cacheFiles(`files-updater/${profile.slug}` as FileDir)
+      return { ok: true }
+    } catch (err) {
+      if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
+      console.error('Failed to save optional mod metadata:', err)
+      return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
     }
   },
 

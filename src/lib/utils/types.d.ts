@@ -20,6 +20,14 @@ export interface Update {
   changelogs: string
 }
 
+export interface OptionalModMetadata {
+  optional: boolean
+  optionalId: string
+  title: string
+  description: string
+  enabledByDefault: boolean
+}
+
 export interface File {
   /**
    * The name of the file.
@@ -59,6 +67,11 @@ export interface File {
    * `'OTHER'` — Other files
    */
   type: 'JAVA' | 'ASSET' | 'LIBRARY' | 'NATIVE' | 'MOD' | 'CONFIG' | 'BOOTSTRAP' | 'BACKGROUND' | 'FOLDER' | 'IMAGE' | 'OTHER'
+  optional?: boolean
+  optionalId?: string
+  title?: string
+  description?: string
+  enabledByDefault?: boolean
 }
 
 export interface HashFile {

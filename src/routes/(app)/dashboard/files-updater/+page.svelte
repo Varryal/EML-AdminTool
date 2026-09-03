@@ -5,6 +5,7 @@
   import FilesUpdater from '../../../../components/contents/FilesUpdater.svelte'
   import type { File as File_ } from '$lib/utils/types'
   import ChangeLoaderModal from '../../../../components/modals/ChangeLoaderModal.svelte'
+  import OptionalModsModal from '../../../../components/modals/OptionalModsModal.svelte'
   import getUser from '$lib/utils/user'
   import { ILoaderFormat, ILoaderType } from '$lib/utils/db'
   import type { Loader } from '@prisma/client'
@@ -30,6 +31,7 @@
   let currentPath = $state('')
 
   let showChangeLoaderModal = $state(false)
+  let showOptionalModsModal = $state(false)
 
   let currentPathSplit = $derived(currentPath.split('/'))
 
@@ -152,6 +154,10 @@
 
 <h2>Files Updater</h2>
 
+{#if showOptionalModsModal}
+  <OptionalModsModal bind:show={showOptionalModsModal} {selectedProfile} files={data.files} />
+{/if}
+
 {#if data.profiles.length > 1}
   <div class="profile-tabs">
     {#each data.profiles as profile}
@@ -197,6 +203,9 @@
   </h3>
 
   <FilesUpdater {selectedProfile} bind:files bind:currentPath bind:ready={filesReady} />
+  <button class="secondary" onclick={() => (showOptionalModsModal = true)} aria-label="Manage optional mods">
+    <i class="fa-solid fa-puzzle-piece"></i>&nbsp;&nbsp;Optional mods
+  </button>
 </section>
 
 {#if user.profilePermissions.some((perm) => perm.profileId === selectedProfile.id && perm.permission === 2) || user.isAdmin}

@@ -2,7 +2,7 @@ import { BusinessError, ServerError } from '$lib/utils/errors'
 import { NotificationCode } from '$lib/utils/notifications'
 import fs from 'node:fs/promises'
 import path_ from 'node:path'
-import type { DataDir, FileDir, File as File_ } from '$lib/utils/types'
+import type { DataDir, FileDir, File as File_, OptionalModMetadata } from '$lib/utils/types'
 import crypto from 'node:crypto'
 import { createReadStream } from 'node:fs'
 
@@ -18,6 +18,7 @@ export async function getFiles(domain: string, dir: FileDir | DataDir): Promise<
   await fs.mkdir(path_.join(root, base, dir), { recursive: true })
   const filesArray: File_[] = []
   await browse(filesArray, base, dir, '', domain)
+  if (dir.startsWith('files-updater/')) await applyOptionalModMetadata(filesArray, dir.slice('files-updater/'.length))
   return filesArray
 }
 
@@ -298,6 +299,43 @@ export async function cacheFiles(dir: FileDir): Promise<void> {
   const files = await getFiles('{{url}}', dir as FileDir)
   await fs.mkdir(path_.join(root, 'data', 'cache'), { recursive: true })
   await fs.writeFile(path_.join(root, 'data', 'cache', `${cacheKey}.json`), JSON.stringify(files, null, 2))
+}
+
+const OPTIONAL_MOD_ID = /^[a-z0-9][a-z0-9._-]{0,63}$/
+const PROFILE_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/
+
+function optionalMetadataPath(slug: string): string {
+  if (!PROFILE_SLUG.test(slug)) throw new Error('Invalid profile slug')
+  return path_.join(root, 'data', 'optional-mods', `${slug}.json`)
+}
+
+async function readOptionalModMetadata(slug: string): Promise<Record<string, OptionalModMetadata>> {
+  try {
+    const raw = JSON.parse(await fs.readFile(optionalMetadataPath(slug), 'utf8')) as unknown
+    return raw && typeof raw === 'object' ? raw as Record<string, OptionalModMetadata> : {}
+  } catch { return {} }
+}
+
+async function applyOptionalModMetadata(files: File_[], slug: string): Promise<void> {
+  const metadata = await readOptionalModMetadata(slug)
+  for (const file of files) {
+    const item = metadata[`${file.path}${file.name}`]
+    if (file.type === 'MOD' && item?.optional && OPTIONAL_MOD_ID.test(item.optionalId)) Object.assign(file, item)
+  }
+}
+
+export async function saveOptionalModMetadata(slug: string, metadata: Record<string, OptionalModMetadata>, files: File_[]): Promise<void> {
+  const validFiles = new Set(files.filter((file) => file.type === 'MOD').map((file) => `${file.path}${file.name}`))
+  const sanitized: Record<string, OptionalModMetadata> = {}
+  for (const [filePath, item] of Object.entries(metadata)) {
+    if (!validFiles.has(filePath) || !item?.optional || !OPTIONAL_MOD_ID.test(item.optionalId)) throw new Error('Invalid optional mod metadata')
+    sanitized[filePath] = { optional: true, optionalId: item.optionalId, title: item.title.slice(0, 120), description: item.description.slice(0, 500), enabledByDefault: Boolean(item.enabledByDefault) }
+  }
+  const target = optionalMetadataPath(slug)
+  await fs.mkdir(path_.dirname(target), { recursive: true })
+  const temporary = `${target}.tmp-${process.pid}-${Date.now()}`
+  await fs.writeFile(temporary, JSON.stringify(sanitized, null, 2), 'utf8')
+  await fs.rename(temporary, target)
 }
 
 function getBaseFolder(dir: FileDir | DataDir): 'files' | 'data' {
