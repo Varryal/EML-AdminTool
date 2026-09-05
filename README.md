@@ -86,13 +86,13 @@ _См. [документацию](https://emlproject.pages.dev/docs/eml-admintoo
 
 Управлять сборкой модов на стороне сервера можно несколькими способами. Ниже EML AdminTool сравнивается с распространёнными альтернативами.
 
-| Approach                                            | Setup effort              | Update workflow                                | Access control                    | Maintenance mode | News & background | Works without EML Lib        |
+| Подход                                              | Сложность настройки       | Процесс обновления                             | Управление доступом               | Режим обслуживания | Новости и фон | Работает без EML Lib         |
 | --------------------------------------------------- | ------------------------- | ---------------------------------------------- | --------------------------------- | ---------------- | ----------------- | ---------------------------- |
-| **EML AdminTool**                                   | Low (Docker, one command) | Upload via dashboard, propagates automatically | Per-user, per-profile permissions | Built-in         | Built-in          | No                           |
-| **Manual file hosting** (VPS, CDN, GitHub Releases) | Low                       | Manual re-upload + update JSON                 | None                              | None             | None              | Yes                          |
-| **Custom admin panel**                              | High                      | Custom-built                                   | Custom-built                      | Custom-built     | Custom-built      | Yes                          |
-| **CurseForge / Modrinth**                           | None                      | Platform-managed                               | Platform-managed                  | No               | No                | Yes (platform launcher only) |
-| **Pterodactyl + scripts**                           | High                      | Via SSH / scripts                              | Pterodactyl users                 | Manual           | None              | Yes                          |
+| **EML AdminTool** | Низкая (Docker, одна команда) | Загрузка через панель, распространяется автоматически | Права для пользователя и профиля | Встроен | Встроены | Нет |
+| **Ручной файловый хостинг** (VPS, CDN, GitHub Releases) | Низкая | Ручная повторная загрузка и обновление JSON | Нет | Нет | Нет | Да |
+| **Собственная админ-панель** | Высокая | Собственная разработка | Собственная разработка | Собственная разработка | Собственная разработка | Да |
+| **CurseForge / Modrinth** | Нет | Управляется платформой | Управляется платформой | Нет | Нет | Да (только лаунчер платформы) |
+| **Pterodactyl + scripts** | Высокая | Через SSH / scripts | Пользователи Pterodactyl | Вручную | Нет | Да |
 
 ### Когда использовать EML AdminTool
 
