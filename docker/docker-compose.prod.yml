@@ -9,7 +9,7 @@
 # reviewed releases and controlled deployments only. #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
-# Varryal EML AdminTool 2.7.0-varryal.3
+# Varryal EML AdminTool 2.7.0-varryal.1
 #
 
 name: eml-admintool
@@ -19,7 +19,7 @@ networks:
 
 services:
   web:
-    image: ghcr.io/varryal/eml-admintool:2.7.0-varryal.3
+    image: ghcr.io/varryal/eml-admintool:2.7.0-varryal.1
     restart: unless-stopped
     networks:
       - network

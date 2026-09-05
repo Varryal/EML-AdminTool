@@ -1,6 +1,6 @@
 {
-  "version": "2.7.0-varryal.3",
+  "version": "2.7.0-varryal.1",
   "upstreamVersion": "2.7.0",
-  "revision": 3,
+  "revision": 1,
   "upstreamRepository": "Electron-Minecraft-Launcher/EML-AdminTool"
 }

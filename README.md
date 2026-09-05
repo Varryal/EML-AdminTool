@@ -2,7 +2,7 @@
 
 **Varryal EML AdminTool — поддерживаемый форк Varryal проекта [Electron-Minecraft-Launcher/EML-AdminTool](https://github.com/Electron-Minecraft-Launcher/EML-AdminTool).** Он сохраняет совместимость с upstream и содержит функции и исправления Varryal для управления лаунчером.
 
-Текущая версия форка: **2.7.0-varryal.3**. База upstream: **2.7.0**. Машиночитаемые метаданные форка находятся в [`varryal.json`](./varryal.json), а контролируемый процесс обновления из upstream описан в [`docs/UPSTREAM_SYNC.md`](./docs/UPSTREAM_SYNC.md).
+Текущая версия форка: **2.7.0-varryal.1**. База upstream: **2.7.0**. Машиночитаемые метаданные форка находятся в [`varryal.json`](./varryal.json), а контролируемый процесс обновления из upstream описан в [`docs/UPSTREAM_SYNC.md`](./docs/UPSTREAM_SYNC.md).
 
 Прямые самообновления из upstream в этом форке намеренно отключены. Релизы upstream носят справочный характер, пока не пройдут review, интеграцию и тестирование; production-развёртывание — отдельное ручное инфраструктурное действие Varryal.
 
@@ -10,7 +10,7 @@
 
 [<img src="https://img.shields.io/badge/Discord-EML-5561e6?&style=for-the-badge">](https://emlproject.com/discord/github)
 [<img src="https://img.shields.io/badge/platforms-Docker-0077DA?style=for-the-badge&color=0077DA">](#platforms)
-[<img src="https://img.shields.io/badge/version-2.7.0--varryal.3-orangered?style=for-the-badge&color=orangered">](varryal.json)
+[<img src="https://img.shields.io/badge/version-2.7.0--varryal.1-orangered?style=for-the-badge&color=orangered">](varryal.json)
 
 <p>
 <center>

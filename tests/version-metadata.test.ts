@@ -28,19 +28,19 @@ test('PREPROD metadata is explicit and uses the short main build identifier', ()
 })
 
 test('production metadata has safe repository fallbacks', () => {
-  const metadata = resolveVersionMetadata('2.7.0-varryal.3')
+  const metadata = resolveVersionMetadata('2.7.0-varryal.1')
 
   assert.deepEqual(metadata, {
     channel: 'prod',
-    varryalVersion: '2.7.0-varryal.3',
-    buildId: 'release-2.7.0-varryal.3'
+    varryalVersion: '2.7.0-varryal.1',
+    buildId: 'release-2.7.0-varryal.1'
   })
-  assert.equal(formatVersionLabel(metadata), 'EML AdminTool 2.7.0-varryal.3 · PROD · release-2.7.0-varryal.3')
+  assert.equal(formatVersionLabel(metadata), 'EML AdminTool 2.7.0-varryal.1 · PROD · release-2.7.0-varryal.1')
 })
 
 test('invalid deployment metadata is rejected instead of being displayed as production', () => {
-  assert.throws(() => resolveVersionMetadata('2.7.0-varryal.3', { VARRYAL_CHANNEL: 'staging' }), /VARRYAL_CHANNEL/)
-  assert.throws(() => resolveVersionMetadata('2.7.0-varryal.3', { VARRYAL_BUILD_ID: 'main sha' }), /VARRYAL_BUILD_ID/)
+  assert.throws(() => resolveVersionMetadata('2.7.0-varryal.1', { VARRYAL_CHANNEL: 'staging' }), /VARRYAL_CHANNEL/)
+  assert.throws(() => resolveVersionMetadata('2.7.0-varryal.1', { VARRYAL_BUILD_ID: 'main sha' }), /VARRYAL_BUILD_ID/)
 })
 
 test('footer renders two lines, colors both channels, and keeps the existing link order', () => {
