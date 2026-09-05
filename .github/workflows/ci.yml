@@ -1,4 +1,4 @@
-name: CI панель
+name: CI панели
 
 on:
   pull_request:
