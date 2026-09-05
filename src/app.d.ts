@@ -1,5 +1,5 @@
-import type { LanguageCode } from '$lib/stores/language'
 import type { UserProfilePermissionInfo } from '$lib/utils/db'
+import type { Env } from '$lib/utils/types'
 import { NotificationCode } from '$lib/utils/notifications'
 
 // See https://kit.svelte.dev/docs/types#app
@@ -12,13 +12,7 @@ declare global {
     }
     interface Locals {
       isConfigured: boolean
-      env: {
-        language: LanguageCode
-        name: string
-        theme: string
-        version: string
-        serverIp?: string | null
-      }
+      env: Env
       user?: {
         id: string
         username: string

@@ -74,14 +74,14 @@ Workflow `Релиз Varryal EML AdminTool` остановится с ошибк
 
 Нормальная последовательность:
 
-1. проверить текущий `main` через `[HOTFIX] EML AdminTool`, если нужна проверка на live-сайте до релиза;
+1. проверить текущий `main` через `[PREPROD] EML AdminTool`, если нужна проверка до релиза;
 2. выпустить официальный Varryal-релиз по процедуре выше;
 3. взять digest опубликованного release image;
 4. обновить `infra/compose/compose.prod.yml` в `VarryalLauncher`, закрепив `<version>@sha256:<digest>`;
 5. проверить изменение через PR/CI;
 6. вручную запустить `[PROD] EML AdminTool`.
 
-HOTFIX не заменяет официальный релиз и не меняет production pin в репозитории.
+PREPROD не заменяет официальный релиз и не меняет production pin в репозитории.
 
 ## Обновление с upstream
 
