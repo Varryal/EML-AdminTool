@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { PageProps } from './$types'
   import { fade } from 'svelte/transition'
-  import { onMount } from 'svelte'
   import getEnv from '$lib/utils/env'
   import { addNotification } from '$lib/stores/notifications'
   import { l } from '$lib/stores/language'
@@ -9,7 +8,7 @@
   import { IUserStatus } from '$lib/utils/db'
   import UserManagement from '../../../../components/contents/UserManagement.svelte'
   import EditEMLAdminToolModal from '../../../../components/modals/EditEMLAdminToolModal.svelte'
-  import { waitForServerRestart, sleep } from '$lib/utils/utils'
+  import { waitForServerRestart } from '$lib/utils/utils'
   import { callAction } from '$lib/utils/call'
   import Markdown from '../../../../components/layouts/Markdown.svelte'
   import UninstallModal from '../../../../components/modals/UninstallModal.svelte'
@@ -18,9 +17,6 @@
 
   const env = getEnv()
 
-  const updateWarning = `Are you sure you want to update EML AdminTool?
-Please note that EML AdminTool, and therefore the Launchers too, will be unavailable during the update (about 1 minutes downtime).`
-
   let showLoader = $state(false)
   let showEditAdminToolModal = $state(false)
   let showUninstallModal = $state(false)
@@ -28,42 +24,8 @@ Please note that EML AdminTool, and therefore the Launchers too, will be unavail
   let selectedUserId = $state(data.users[0].id)
   let updateMessage: string = $state('')
 
-  onMount(() => {
-    if (window.location.search.includes('updated=true')) {
-      const message = $l.notifications.EMLAT_UPDATED
-      addNotification('INFO', message)
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
-  })
-
   function editAdminToolModal() {
     showEditAdminToolModal = true
-  }
-
-  async function runUpdate() {
-    if (!confirm(updateWarning)) return
-
-    updateMessage = 'Updating...'
-    showLoader = true
-    document.body.style.overflow = 'hidden'
-
-    try {
-      const status = await callAction({ url: '/dashboard/emlat-settings', action: 'updateEMLAT', formData: new FormData() }, $l)
-      if (status?.data.dev) {
-        await sleep(2000)
-        updateMessage = '[DEV] Update is working!'
-        await sleep(2000)
-        window.location.href = '/dashboard/emlat-settings?updated=true'
-      } else {
-        await waitForServerRestart(12, '/dashboard/emlat-settings?updated=true', data.update.currentVersion)
-      }
-    } catch (err) {
-      console.error('Failed to update:', err)
-      addNotification('ERROR', $l.notifications.EMLAT_UPDATE_FAILED)
-      showLoader = false
-      document.body.style.overflow = 'auto'
-      return
-    }
   }
 
   async function reset() {
@@ -189,52 +151,52 @@ Please note that EML AdminTool, and therefore the Launchers too, will be unavail
 <section class="section">
   <h3>{$l.dashboard.emlatSettings.update.title}</h3>
 
-  {#if data.update.currentVersion.includes('beta') || data.update.latestVersion.includes('alpha')}
-    <div class="no-update">
-      <p><i class="fa-solid fa-times-circle"></i></p>
-      <p>
-        You are using a alpha/beta version of EML AdminTool. This version is not linked to the update system, so you have to update manually.
-        <br /> Please see <a href="https://github.com/Electron-Minecraft-Launcher/EML-AdminTool/" target="_blank">GitHub</a> to get the latest version.
-      </p>
-    </div>
-  {:else}
-    <div class="container">
-      <div>
-        <p class="label">{$l.dashboard.emlatSettings.update.currentVersion}</p>
-        <p>EML AdminTool {data.update.currentVersion}</p>
-      </div>
-
-      <div>
-        <p class="label">{$l.dashboard.emlatSettings.update.latestVersion}</p>
-        <p>EML AdminTool {data.update.latestVersion}</p>
-      </div>
+  <div class="container">
+    <div>
+      <p class="label">{$l.dashboard.emlatSettings.update.currentVersion}</p>
+      <p>Varryal EML AdminTool {data.update.currentVersion}</p>
     </div>
 
-    {#if data.update.currentVersion != data.update.latestVersion}
-      <div class="updater">
-        <div style="line-height: 1;">
-          <img src={data.update.logoUrl} alt="Version logo" />
-        </div>
-        <div>
-          <p class="release-name"><b>EML AdminTool {data.update.latestVersion}</b></p>
-          <p class="release-date">
-            {$l({ date: new Date(data.update.releaseDate).toLocaleDateString() }).dashboard.emlatSettings.update.releasedOn}
-            –
-            <a href="https://github.com/Electron-Minecraft-Launcher/EML-AdminTool/releases/tag/v{data.update.latestVersion}" target="_blank">
-              {$l.dashboard.emlatSettings.update.openGithub}&nbsp;&nbsp;<i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 12px"></i>
-            </a>
-          </p>
-        </div>
-        <div class="actions">
-          <button class="secondary" onclick={runUpdate}>{$l.dashboard.emlatSettings.update.runUpdate}</button>
-        </div>
+    <div>
+      <p class="label">Upstream base</p>
+      <p>EML AdminTool {data.update.upstreamVersion}</p>
+    </div>
+
+    <div>
+      <p class="label">{$l.dashboard.emlatSettings.update.latestVersion}</p>
+      <p>EML AdminTool {data.update.latestVersion}</p>
+    </div>
+  </div>
+
+  <div class="fork-update-note">
+    <p><i class="fa-solid fa-shield-halved"></i></p>
+    <p>
+      <b>Controlled updates are enabled for the Varryal fork.</b><br />
+      Direct upstream self-updates are disabled so Varryal-specific changes cannot be overwritten. Upstream releases are reviewed, merged and tested before deployment.
+    </p>
+  </div>
+
+  {#if data.update.upstreamUpdateAvailable}
+    <div class="updater">
+      <div style="line-height: 1;">
+        <img src={data.update.logoUrl} alt="Version logo" />
       </div>
-      <div class="changelogs">
-        <div class="changelogs-in">
-          <Markdown source={data.update.changelogs} />
-        </div>
+      <div>
+        <p class="release-name"><b>Upstream EML AdminTool {data.update.latestVersion} is available</b></p>
+        <p class="release-date">
+          {$l({ date: new Date(data.update.releaseDate).toLocaleDateString() }).dashboard.emlatSettings.update.releasedOn}
+          –
+          <a href="https://github.com/Electron-Minecraft-Launcher/EML-AdminTool/releases/tag/v{data.update.latestVersion}" target="_blank">
+            {$l.dashboard.emlatSettings.update.openGithub}&nbsp;&nbsp;<i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 12px"></i>
+          </a>
+        </p>
       </div>
-    {/if}
+    </div>
+    <div class="changelogs">
+      <div class="changelogs-in">
+        <Markdown source={data.update.changelogs} />
+      </div>
+    </div>
   {/if}
 </section>
 
@@ -314,18 +276,22 @@ Please note that EML AdminTool, and therefore the Launchers too, will be unavail
     }
   }
 
-  div.no-update {
+  div.fork-update-note {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 20px;
     margin-top: 30px;
+    padding: 16px 18px;
+    border: 1px solid var(--border-color2);
+    border-radius: 5px;
 
     p {
       margin: 0;
 
       i {
+        margin-top: 2px;
         font-size: 20px;
-        color: var(--red-color);
+        color: var(--primary-color);
       }
     }
   }
@@ -351,22 +317,6 @@ Please note that EML AdminTool, and therefore the Launchers too, will be unavail
     p.release-date {
       font-size: 14px;
       color: var(--text-dark-color);
-    }
-
-    div.actions {
-      display: flex;
-      align-items: center;
-      margin-left: auto;
-      gap: 20px;
-
-      button.secondary {
-        margin-top: 0;
-        display: inline-block;
-      }
-
-      p {
-        margin: 0;
-      }
     }
 
     img {
