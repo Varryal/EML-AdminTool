@@ -1,4 +1,4 @@
-name: Release Varryal EML AdminTool
+name: Релиз Varryal EML AdminTool
 
 on:
   push:
@@ -7,27 +7,27 @@ on:
 
 jobs:
   build:
-    name: Verify, publish image and create release
+    name: Проверка, публикация image и создание релиза
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
 
     steps:
-      - name: Checkout code
+      - name: Получить исходники
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Verify tag is on main
+      - name: Проверить, что tag находится в main
         run: |
           if ! git branch -r --contains "$GITHUB_SHA" | grep -q 'origin/main'; then
-            echo "Error: Tag $GITHUB_REF_NAME is not on the main branch."
+            echo "Ошибка: tag $GITHUB_REF_NAME не находится в ветке main."
             exit 1
           fi
-          echo "✅ Tag is on main."
+          echo "✅ Tag находится в main."
 
-      - name: Resolve and verify Varryal version
+      - name: Определить и проверить версию Varryal
         id: version
         shell: bash
         run: |
@@ -38,41 +38,41 @@ jobs:
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
 
           if [ "$VERSION" != "$METADATA_VERSION" ]; then
-            echo "Error: tag version $VERSION does not match varryal.json $METADATA_VERSION"
+            echo "Ошибка: версия tag $VERSION не совпадает с varryal.json $METADATA_VERSION"
             exit 1
           fi
 
           if [ "$UPSTREAM_VERSION" != "$PACKAGE_VERSION" ]; then
-            echo "Error: varryal.json upstreamVersion $UPSTREAM_VERSION does not match package.json $PACKAGE_VERSION"
+            echo "Ошибка: varryal.json upstreamVersion $UPSTREAM_VERSION не совпадает с package.json $PACKAGE_VERSION"
             exit 1
           fi
 
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "✅ Varryal release metadata is consistent."
+          echo "✅ Метаданные релиза Varryal согласованы."
 
-      - name: Verify changelog file exists
+      - name: Проверить наличие changelog
         run: |
           CHANGELOG_FILE=".github/changelogs/${GITHUB_REF_NAME}.md"
           if [ ! -f "$CHANGELOG_FILE" ]; then
-            echo "Error: Changelog file $CHANGELOG_FILE does not exist."
+            echo "Ошибка: файл changelog $CHANGELOG_FILE не существует."
             exit 1
           fi
-          echo "✅ Changelog file found."
+          echo "✅ Changelog найден."
 
-      - name: Set up Node.js 24
+      - name: Настроить Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
-      - name: Verify source
+      - name: Проверить исходники
         run: |
           npm ci
           npx prisma generate --no-hints
           npm run check
           npm run build
 
-      - name: Generate release compose
+      - name: Сгенерировать release Compose
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
@@ -83,17 +83,17 @@ jobs:
           await fs.writeFile('docker/docker-compose.prod.yml', template.replace(/\{\{VERSION\}\}/g, version))
           NODE
 
-      - name: Set up Docker Buildx
+      - name: Настроить Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
+      - name: Войти в GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
+      - name: Подготовить Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -105,7 +105,7 @@ jobs:
             org.opencontainers.image.source=https://github.com/Varryal/EML-AdminTool
             org.opencontainers.image.version=${{ steps.version.outputs.value }}
 
-      - name: Build and push Docker image
+      - name: Собрать и отправить Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
         with:
@@ -116,7 +116,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Create GitHub Release
+      - name: Создать GitHub Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
