@@ -1,126 +1,126 @@
-# ⚠️ Important: PostgreSQL database migration guide
+# ⚠️ Важно: руководство по миграции базы данных PostgreSQL
 
-**Please read this entire guide before starting.**
+**Перед началом полностью прочитайте это руководство.**
 
-With the latest update of EML AdminTool, we have upgraded the internal database engine (PostgreSQL) to version 18. This is a major update that changes how data is stored on the disk.
+В последнем обновлении EML AdminTool внутренний движок базы данных (PostgreSQL) обновлён до версии 18. Это крупное обновление меняет способ хранения данных на диске.
 
-Because of this change, **the automatic update will break the database connection**. This is expected behavior.
+Из-за этого изменения **автоматическое обновление нарушит подключение к базе данных**. Это ожидаемое поведение.
 
-## The strategy
+## Стратегия
 
-Here is exactly what is going to happen:
+Вот что произойдёт:
 
-1. You run the **Auto-Update** in EML AdminTool.
-2. The tool restarts and likely **crashes** or shows a "Database Error". **Do not panic.**
-3. You will connect via SSH to perform a manual migration.
-4. You will backup the data, delete the old storage, and restore the data into the new version.
+1. Вы запускаете **Auto-Update** в EML AdminTool.
+2. Инструмент перезапускается и, вероятно, **завершится с ошибкой** или покажет "Database Error". **Не паникуйте.**
+3. Вы подключитесь по SSH, чтобы выполнить миграцию вручную.
+4. Вы создадите резервную копию, удалите старое хранилище и восстановите данные в новой версии.
 
-## Steps to follow
+## Порядок действий
 
-### Preparation (before updating)
+### Подготовка (до обновления)
 
-First, we need to save your current data while the old system is still running.
+Сначала нужно сохранить текущие данные, пока старая система ещё работает.
 
-1.  **Connect to your server via SSH.**
+1.  **Подключитесь к серверу по SSH.**
 
-2.  **Go to your installation folder:** By default, it is usually:
+2.  **Перейдите в каталог установки:** по умолчанию это обычно:
 
     ```bash
     cd ~/.eml/admintool
     ```
 
-3.  **Retrieve your database credentials:** We need to know the username to perform the backup. Keep the password handy just in case. Run this command:
+3.  **Получите учётные данные базы данных:** для резервного копирования нужно имя пользователя. На всякий случай держите под рукой пароль. Выполните команду:
 
     ```bash
     docker compose -f docker-compose.prod.yml exec web cat /app/.env
     ```
 
-    Look for `DATABASE_URL=postgresql://USER:PASSWORD@dbs...`. Note down the **USER** (e.g., `eml`) and **PASSWORD**.
+    Найдите `DATABASE_URL=postgresql://USER:PASSWORD@dbs...`. Запишите **USER** (например, `eml`) и **PASSWORD**.
 
-4.  **Backup your data (the dump):** Run this command to save everything to a file. Replace `USER` with the username you just found.
+4.  **Создайте резервную копию данных (dump):** выполните команду, чтобы сохранить всё в файл. Замените `USER` на найденное имя пользователя.
 
     ```bash
     docker compose -f docker-compose.prod.yml exec -T dbs pg_dumpall -U USER > migration_backup.sql
     ```
 
-5.  **Verify the backup:** Check that the file was created and is not empty:
+5.  **Проверьте резервную копию:** убедитесь, что файл создан и не пуст:
     ```bash
     ls -lh migration_backup.sql
     ```
 
-### The update (breaking things)
+### Обновление (нарушает совместимость)
 
-Now that your data is safe, you can proceed with the update.
+Теперь данные сохранены, и можно продолжить обновление.
 
-1.  **Go to your EML AdminTool web interface.**
+1.  **Откройте веб-интерфейс EML AdminTool.**
 
-2.  **Click the "Update" button.** The AdminTool will download the new files and restart.
+2.  **Нажмите кнопку "Update".** AdminTool скачает новые файлы и перезапустится.
 
-    **⚠️ IMPORTANT:** After a minute, the AdminTool will likely stop working (Error 500, Bad Gateway, Service Unavailable, or infinite loadings). **This is NORMAL.** Do not panic. The new database version cannot read the old files yet.
+    **⚠️ ВАЖНО:** через минуту AdminTool, вероятно, перестанет работать (Error 500, Bad Gateway, Service Unavailable или бесконечная загрузка). **ЭТО НОРМАЛЬНО.** Не паникуйте: новая версия базы данных ещё не может прочитать старые файлы.
 
-### The migration (fixing things)
+### Миграция (исправление)
 
-Now we need to clear the old incompatible storage and restore your backup into the new system.
+Теперь нужно очистить старое несовместимое хранилище и восстановить резервную копию в новой системе.
 
-1.  **Stop the application completely:**
+1.  **Полностью остановите приложение:**
 
     ```bash
     docker compose -f docker-compose.prod.yml down
     ```
 
-2.  **Delete the old database volume:** This deletes the actual data files inside Docker (don't worry, we have the `migration_backup.sql`).
+2.  **Удалите старый том базы данных:** это удалит фактические файлы данных внутри Docker (не переживайте, у нас есть `migration_backup.sql`).
 
-    First, find the exact volume name:
+    Сначала найдите точное имя тома:
 
     ```bash
     docker volume ls
     ```
 
-    Look for a volume with a name similar to `eml-admintool_database`.
+    Найдите том с именем, похожим на `eml-admintool_database`.
 
-    Then remove it (replace with your actual volume name):
+    Затем удалите его (подставьте фактическое имя тома):
 
     ```bash
     docker volume rm eml-admintool_database
     ```
 
-3.  **Start the new database:** Now that the old volume is gone, Docker will create a fresh, empty one compatible with PostgreSQL 18.
+3.  **Запустите новую базу данных:** теперь старый том удалён, и Docker создаст новый пустой том, совместимый с PostgreSQL 18.
 
     ```bash
     docker compose -f docker-compose.prod.yml up -d dbs
     ```
 
-    _Wait about 15 seconds for the database to initialize._
+    _Подождите около 15 секунд, пока база данных инициализируется._
 
-4.  **Restore your data:** Inject your backup into the new database. Replace `USER` with your database username found in step 3.
+4.  **Восстановите данные:** загрузите резервную копию в новую базу данных. Замените `USER` на имя пользователя базы данных, найденное на шаге 3.
 
     ```bash
     cat migration_backup.sql | docker compose -f docker-compose.prod.yml exec -T dbs psql -U eml -d postgres
     ```
 
-    _Note: You might see "role already exists" or "database already exists" errors. This is normal and safe to ignore._
+    _Примечание: могут появиться ошибки "role already exists" или "database already exists". Это нормально, их можно безопасно игнорировать._
 
-### Restart
+### Перезапуск
 
-1.  **Start the rest of the application:**
+1.  **Запустите остальную часть приложения:**
 
     ```bash
     docker compose -f docker-compose.prod.yml up -d
     ```
 
-2.  **Check the database and logs (Optional):**
+2.  **Проверьте базу данных и логи (необязательно):**
 
     ```bash
     docker compose -f docker-compose.prod.yml exec -T dbs psql -U eml -d eml_admintool -c "\dt"
-    # This lists the tables in the database to verify data presence.
+    # Выводит таблицы базы данных для проверки наличия данных.
     ```
 
     ```bash
     docker compose -f docker-compose.prod.yml logs -f web
-    # This shows the application logs to verify everything is running smoothly.
+    # Выводит логи приложения для проверки его штатной работы.
     ```
 
-    Ensure the application starts without database errors.
+    Убедитесь, что приложение запускается без ошибок базы данных.
 
-3.  **Done!**
-    You can now refresh your browser. EML AdminTool is back online, updated, and running on PostgreSQL 18.
+3.  **Готово!**
+    Теперь можно обновить страницу в браузере. EML AdminTool снова доступен, обновлён и работает на PostgreSQL 18.

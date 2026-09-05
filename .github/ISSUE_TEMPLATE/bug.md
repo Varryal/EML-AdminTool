@@ -1,53 +1,53 @@
 ---
-name: Bug
-about: Report a bug in EML AdminTool
+name: Ошибка
+about: Сообщить об ошибке в EML AdminTool
 title: "[BUG]"
 labels: Bug
 assignees: ''
 
 ---
 
-**Concerned feature**
+**Затронутая функция**
 
-[Please provide the name of the feature where you found the bug.]
+[Укажите название функции, в которой обнаружена ошибка.]
 
-**Describe the bug**
+**Описание ошибки**
 
-[Please provide a clear and concise description of the bug.]
+[Приведите ясное и краткое описание ошибки.]
 
-**Steps to reproduce**
+**Шаги для воспроизведения**
 
-1. [Please provide the first step to reproduce the bug.]
-2. [Please provide the second step to reproduce the bug.]
-3. [Please provide the third step to reproduce the bug.]
+1. [Укажите первый шаг для воспроизведения ошибки.]
+2. [Укажите второй шаг для воспроизведения ошибки.]
+3. [Укажите третий шаг для воспроизведения ошибки.]
 
-**Expected behavior**
+**Ожидаемое поведение**
 
-[Please provide a description of the expected behavior.]
+[Опишите ожидаемое поведение.]
 
-**Screenshots**
+**Скриншоты**
 
-[Please provide screenshots if applicable.]
+[При необходимости приложите скриншоты.]
 
-**Additional context**
+**Дополнительный контекст**
 
-* EML AdminTool version: `v[Please provide the precise version of EML AdminTool you are using.]`
-* Environment: (dev/prod)
-* Client logs:
+* Версия EML AdminTool: `v[Укажите точную используемую версию EML AdminTool.]`
+* Окружение: (dev/prod)
+* Логи клиента:
 ```
-[Please provide relevant client logs if applicable.]
+[При необходимости приложите относящиеся к проблеме логи клиента.]
 ```
-* Server logs: 
+* Логи сервера:
 ```
-[Please provide relevant server logs if applicable.]
+[При необходимости приложите относящиеся к проблеме логи сервера.]
 ```
 
 ---
 
-Checklist :
+Чек-лист:
 
-- [ ] I have read the documentation and FAQ, and followed the troubleshooting steps.
-- [ ] I have searched the issue tracker for similar issues and couldn't find anything related.
-- [ ] My EML AdminTool instance is up to date (latest stable version).
-- [ ] I have provided all the information requested in the template.
-- [ ] The information I provided is accurate to the best of my knowledge, and I do not include any sensitive information (e.g., passwords, API keys, personal data).
+- [ ] Я прочитал документацию и FAQ и выполнил шаги по устранению неполадок.
+- [ ] Я поискал похожие issues и не нашёл относящихся к проблеме.
+- [ ] Мой экземпляр EML AdminTool обновлён до последней стабильной версии.
+- [ ] Я предоставил все сведения, запрошенные шаблоном.
+- [ ] Насколько мне известно, указанные сведения точны и не содержат конфиденциальных данных (например, паролей, API-ключей или персональных данных).

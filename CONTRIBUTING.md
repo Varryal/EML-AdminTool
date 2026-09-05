@@ -1,55 +1,55 @@
-# Contribute to EML AdminTool
+# Участие в разработке EML AdminTool
 
-First of all, thank you for your interest in contributing to EML AdminTool ❤️!
+Спасибо за интерес к участию в разработке EML AdminTool ❤️!
 
-This project aims to provide a reliable, secure and maintainable administration panel for Minecraft Launchers built with EML Lib. Contributions are welcome, but must follow the guidelines below to ensure consistency and stability.
+Цель проекта — создать надёжную, безопасную и поддерживаемую панель администрирования лаунчеров Minecraft на базе EML Lib. Вклад приветствуется, но для согласованности и стабильности следуйте правилам ниже.
 
-## Before you start
+## Перед началом
 
-Please make sure to:
+Убедитесь, что вы:
 
-- Read the [README.md](./README.md).
-- Check existing issues and pull requests.
-- Join the Discord server if you need clarification.
+- прочитали [README.md](./README.md);
+- проверили существующие issues и pull requests;
+- присоединились к Discord-серверу, если нужны разъяснения.
 
-If you plan to implement a significant feature, open an issue first to discuss it
+Если вы планируете реализовать значительную функцию, сначала создайте issue для обсуждения.
 
-## Branching strategy
+## Стратегия ветвления
 
-This repository follows a structured workflow:
+В этом репозитории используется структурированный процесс работы:
 
-| Branch name | Purpose                                                  |
+| Имя ветки | Назначение |
 | ----------- | -------------------------------------------------------- |
-| `main`      | Currently published version (production-ready)           |
-| `dev`       | Next version under preparation                           |
-| `feature/*` | Feature-specific branches (recommended for contributors) |
-| `fix/*`     | Bug fix branches (recommended for contributors)          |
+| `main`      | Текущая опубликованная версия (готова к production) |
+| `dev`       | Следующая готовящаяся версия |
+| `feature/*` | Ветки для функций (рекомендуются участникам) |
+| `fix/*`     | Ветки для исправления ошибок (рекомендуются участникам) |
 
 > [!NOTE]
-> To submit a translation, please open an issue using the "Language" template instead of a pull request.
+> Чтобы предложить перевод, создайте issue по шаблону "Language" вместо pull request.
 
-### Do not:
+### Не следует:
 
-- Open pull requests directly to `main`.
-- Create version-numbered branches (e.g., `v1.0.0`).
-- Use non-descriptive branch names (e.g., `update`, `bugfix`).
+- Открывать pull request напрямую в `main`.
+- Создавать ветки с номером версии (например, `v1.0.0`).
+- Использовать неописательные имена веток (например, `update`, `bugfix`).
 
-### Do:
+### Следует:
 
-- Fork the repository and clone it locally.
-- Create a branch from `dev` for your feature or bug fix.
-- Name your branch according to the type of contribution (e.g., `feature/new-dashboard`, `fix/login-issue`).
-- Open a pull request to `dev` when your work is ready for review.
+- Сделать fork репозитория и клонировать его локально.
+- Создать ветку от `dev` для функции или исправления.
+- Назвать ветку по типу вклада (например, `feature/new-dashboard`, `fix/login-issue`).
+- Открыть pull request в `dev`, когда работа готова к review.
 
-## Development setup
+## Настройка разработки
 
-### Requirements
+### Требования
 
-- Node.js (LTS version recommended).
-- Docker Engine and Docker Compose (you can use Docker Desktop).
+- Node.js (рекомендуется LTS-версия).
+- Docker Engine и Docker Compose (можно использовать Docker Desktop).
 - Git.
 
-### Installation
+### Установка
 
 ```bash
 git clone https://github.com/Electron-Minecraft-Launcher/EML-AdminTool.git
@@ -57,113 +57,113 @@ cd EML-AdminTool
 npm install
 ```
 
-### Running the development environment
+### Запуск среды разработки
 
 ```bash
 npm run docker
 ```
 
-You can access the application at [http://localhost:5173](http://localhost:5173) and pgAdmin at [http://localhost:5050](http://localhost:5050).
+Приложение доступно по [http://localhost:5173](http://localhost:5173), а pgAdmin — по [http://localhost:5050](http://localhost:5050).
 
 <details>
-<summary>How to connect to pgAdmin?</summary>
+<summary>Как подключиться к pgAdmin?</summary>
 
-To connect to pgAdmin, you can use the following information:
+Для подключения к pgAdmin используйте следующие данные:
 
 - **Email**: `admintool@eml.com`
-- **Password**: `eml`
+- **Пароль**: `eml`
 
-Then, you can add a new server with the following information:
+Затем добавьте новый сервер со следующими данными:
 
-- **Host**: `dbs`
-- **Port**: `5432`
-- **Username**: `eml`
-- **Password**: the value of `DATABASE_PASSWORD` in the `.env` file
+- **Хост**: `dbs`
+- **Порт**: `5432`
+- **Имя пользователя**: `eml`
+- **Пароль**: значение `DATABASE_PASSWORD` из файла `.env`
 </details>
 
-## Code guidelines
+## Правила кода
 
-### General principles
+### Общие принципы
 
-- Write clean, readable and maintainable code.
-- Keep logic modular and reusable.
-- Avoid using unnecessary dependencies.
-- Respect the project's coding style and conventions.
+- Пишите чистый, читаемый и поддерживаемый код.
+- Сохраняйте логику модульной и пригодной для повторного использования.
+- Избегайте ненужных зависимостей.
+- Соблюдайте стиль и соглашения проекта.
 
 ### TypeScript
 
-- Use strict typing and avoid using `any` where possible.
-- Use interfaces and types to define expected shapes of data.
-- Prefer explicit return types for exported functions and constants.
-- Use `async/await` for asynchronous operations and handle errors properly.
+- Используйте строгую типизацию и по возможности избегайте `any`.
+- Используйте интерфейсы и типы для описания ожидаемой структуры данных.
+- Для экспортируемых функций и констант предпочитайте явные типы возврата.
+- Для асинхронных операций используйте `async/await` и корректно обрабатывайте ошибки.
 
 ### Svelte / SvelteKit
 
-- Keep UI components clean and small.
-- Move business logic to server routes or services.
-- Validate user input both on the client and server sides (with `zod`).
+- Делайте UI-компоненты чистыми и небольшими.
+- Переносите бизнес-логику в серверные маршруты или сервисы.
+- Проверяйте пользовательский ввод и на клиенте, и на сервере (с `zod`).
 
-### Prisma and files
+### Prisma и файлы
 
-We use prisma db push instead of strict migration histories. You must use the Expansion-Contraction pattern for schema changes:
+Мы используем prisma db push вместо строгой истории миграций. Для изменений схемы применяйте паттерн Expansion-Contraction:
 
-- Never delete or rename existing columns directly.
-- Only add new columns with default values or nullable.
-- Migrate data via `scripts/migrations/[migration-name].ts`.
+- Никогда не удаляйте и не переименовывайте существующие колонки напрямую.
+- Добавляйте новые колонки только со значениями по умолчанию или допускающие `null`.
+- Переносите данные через `scripts/migrations/[migration-name].ts`.
 
-### Public API
+### Публичный API
 
-- Ensure backward compatibility when modifying API endpoints for EML Lib.
+- При изменении API endpoints для EML Lib обеспечивайте обратную совместимость.
 
-## Pull request guidelines
+## Правила для pull request
 
-Before submitting a PR:
+Перед отправкой PR:
 
-- Ensure the project builds.
-- Ensure Docker environment runs correctly.
-- Test your changes manually.
-- Keep PRs focused (one feature or fix per PR).
+- Убедитесь, что проект собирается.
+- Убедитесь, что Docker-среда запускается корректно.
+- Проверьте изменения вручную.
+- Держите PR сфокусированным: одна функция или исправление на PR.
 
-PR description must include:
+Описание PR должно содержать:
 
-- What was changed.
-- Why it was changed.
-- Whether it affects database or API behavior.
-- Screenshots if UI is modified.
+- Что изменилось.
+- Почему это изменилось.
+- Влияет ли изменение на БД или поведение API.
+- Скриншоты, если изменён UI.
 
-## Translations
+## Переводы
 
-Translation files are located in `src/lib/locales/`.
+Файлы переводов находятся в `src/lib/locales/`.
 
-To contribute a translation:
+Чтобы добавить перевод:
 
-- Create a new language file.
-- Ensure keys match existing locale structure.
-- Submit via issue using the "Language" template.
+- Создайте файл нового языка.
+- Убедитесь, что ключи соответствуют существующей структуре локалей.
+- Отправьте его через issue по шаблону "Language".
 
-Translations must be validated before merging.
+Перед слиянием переводы должны быть проверены.
 
-## Security
+## Безопасность
 
-If you discover a security vulnerability:
+Если вы нашли уязвимость:
 
-- Do **NOT** open a public issue.
-- Contact the maintainers via Discord (@goldfrite) or email ([goldfrite@gmail.com](mailto:goldfrite@gmail.com)) with details.
+- **НЕ** создавайте публичный issue.
+- Свяжитесь с сопровождающими через Discord (@goldfrite) или email ([goldfrite@gmail.com](mailto:goldfrite@gmail.com)), указав детали.
 
-## Versioning
+## Версионирование
 
-This project follows Semantic Versioning (SemVer). Version numbers are in the format `x.y.z` where:
+Проект следует Semantic Versioning (SemVer). Номера версий имеют формат `x.y.z`, где:
 
-| Type          | Description               |
+| Тип | Описание |
 | ------------- | ------------------------- |
-| `PATCH` (`z`) | Bug fixes                 |
-| `MINOR` (`y`) | New non-breaking features |
-| `MAJOR` (`x`) | Breaking changes          |
+| `PATCH` (`z`) | Исправления ошибок |
+| `MINOR` (`y`) | Новые обратно совместимые функции |
+| `MAJOR` (`x`) | Нарушающие совместимость изменения |
 
-Version tags are created only when merging to main.
+Теги версий создаются только при слиянии в main.
 
-## License
+## Лицензия
 
-This project is licensed under `GNU AGPLv3`.
+Этот проект лицензирован по `GNU AGPLv3`.
 
-By contributing, you agree that your code will be distributed under this license.
+Участвуя в разработке, вы соглашаетесь, что ваш код будет распространяться по этой лицензии.
