@@ -1,10 +1,11 @@
 import type { LanguageCode } from '../stores/language'
+import type { VersionMetadata } from './version'
 
-export type Env = {
+export type Env = VersionMetadata & {
   language: LanguageCode
   name: string
   theme: string
-  version: string
+  serverIp?: string | null
 }
 
 export interface VPS {

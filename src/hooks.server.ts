@@ -1,6 +1,6 @@
 import { error, json, redirect, type Handle, type HandleServerError, type RequestEvent } from '@sveltejs/kit'
 import { env as dynEnv } from '$env/dynamic/private'
-import pkg from '../package.json'
+import fork from '../varryal.json'
 import { db } from '$lib/server/db'
 import type { LanguageCode } from '$lib/stores/language'
 import { sweepPermissions, userPermissionsCache, verify } from '$lib/server/auth'
@@ -18,9 +18,11 @@ import { dev } from '$app/environment'
 import { sequence } from '@sveltejs/kit/hooks'
 import '$lib/utils/prototypes'
 import { protectedProfilesCache } from '$lib/server/profile'
+import { resolveVersionMetadata } from '$lib/utils/version'
 
 const DEFAULT_ORIGINS = ['http://localhost:8080', 'http://127.0.0.1:8080', 'http://localhost:5173']
 const filesDir = path.resolve(process.cwd(), 'files')
+const versionMetadata = resolveVersionMetadata(fork.version, process.env)
 await initProtectedProfiles()
 
 const app: Handle = async ({ event, resolve }) => {
@@ -265,7 +267,7 @@ async function loadApplicationContext(event: RequestEvent) {
       language: (envData?.language as LanguageCode) ?? 'en',
       name: envData?.name ?? 'EML',
       theme: envData?.theme ?? 'default',
-      version: pkg.version
+      ...versionMetadata
     }
   } catch (err) {
     console.error('Failed to load environment:', err)
@@ -304,7 +306,7 @@ function getDefaultEnv() {
     language: 'en' as LanguageCode,
     name: 'EML',
     theme: 'default',
-    version: pkg.version
+    ...versionMetadata
   }
 }
 
