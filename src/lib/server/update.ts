@@ -1,10 +1,13 @@
 import { ServerError } from '$lib/utils/errors'
 import { NotificationCode } from '$lib/utils/notifications'
-import pkg from '../../../package.json'
+import semver from 'semver'
+import fork from '../../../varryal.json'
 
 export async function getUpdate(): Promise<{
   currentVersion: string
+  upstreamVersion: string
   latestVersion: string
+  upstreamUpdateAvailable: boolean
   releaseDate: string
   logoUrl: string
   changelogs: string
@@ -12,49 +15,39 @@ export async function getUpdate(): Promise<{
   let data
 
   try {
-    const response = await fetch('https://api.github.com/repos/Electron-Minecraft-Launcher/EML-AdminTool/releases/latest')
+    const response = await fetch(`https://api.github.com/repos/${fork.upstreamRepository}/releases/latest`)
     if (response.ok) {
       data = (await response.json()) as { tag_name: string; published_at: string; body: string }
     } else {
-      console.error('Failed to fetch latest release:', response.statusText)
-      data = { tag_name: pkg.version, published_at: Date.now().toString().split('T')[0], body: '' }
+      console.error('Failed to fetch latest upstream release:', response.statusText)
+      data = { tag_name: `v${fork.upstreamVersion}`, published_at: new Date().toISOString(), body: '' }
     }
   } catch (err) {
-    console.error('Failed to fetch latest release:', err)
-    data = { tag_name: pkg.version, published_at: Date.now().toString().split('T')[0], body: '' }
+    console.error('Failed to fetch latest upstream release:', err)
+    data = { tag_name: `v${fork.upstreamVersion}`, published_at: new Date().toISOString(), body: '' }
   }
 
-  const currentVersion = pkg.version
-  const latestVersion = data.tag_name.replace('v', '') ?? currentVersion
-  const releaseDate = data.published_at.split('T')[0] ?? Date.now().toString().split('T')[0]
+  const currentVersion = fork.version
+  const upstreamVersion = fork.upstreamVersion
+  const latestVersion = data.tag_name.replace(/^v/, '') || upstreamVersion
+  const releaseDate = data.published_at.split('T')[0] ?? new Date().toISOString().split('T')[0]
   const shortLastVersion = latestVersion.split('.').slice(0, 2).join('.')
-  const logoUrl = `https://raw.githubusercontent.com/Electron-Minecraft-Launcher/EML-AdminTool/refs/heads/main/.github/changelogs/v${shortLastVersion}.png`
+  const logoUrl = `https://raw.githubusercontent.com/${fork.upstreamRepository}/refs/heads/main/.github/changelogs/v${shortLastVersion}.png`
   const changelogs = data.body
+  const upstreamUpdateAvailable =
+    semver.valid(latestVersion) !== null && semver.valid(upstreamVersion) !== null
+      ? semver.gt(latestVersion, upstreamVersion)
+      : latestVersion !== upstreamVersion
 
-  return { currentVersion, latestVersion, releaseDate, logoUrl, changelogs }
+  return { currentVersion, upstreamVersion, latestVersion, upstreamUpdateAvailable, releaseDate, logoUrl, changelogs }
 }
 
 export async function update(): Promise<void> {
-  const updaterHost = `http://upd:4000`
-  const apiToken = process.env.UPDATER_HTTP_API_TOKEN
-
-  if (!apiToken) {
-    console.error('Updater API token is not configured.')
-    throw new ServerError('Update service not configured.', null, NotificationCode.UPDATER_ERROR)
-  }
-
-  try {
-    const response = await fetch(`${updaterHost}/update`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiToken}` }
-    })
-
-    if (!response.ok) {
-      console.error('Update service returned an error:', response.statusText)
-      throw new ServerError('Update service returned an error', null, NotificationCode.UPDATER_ERROR)
-    }
-  } catch (err) {
-    console.error('Failed to reach the update service:', err)
-    throw new ServerError('Could not reach the update service', err, NotificationCode.UPDATER_ERROR)
-  }
+  console.warn('Direct EML AdminTool self-update is disabled in the Varryal fork.')
+  throw new ServerError(
+    'Direct upstream updates are disabled for the Varryal fork. Use the controlled Varryal deployment workflow.',
+    null,
+    NotificationCode.UPDATER_ERROR,
+    409
+  )
 }
