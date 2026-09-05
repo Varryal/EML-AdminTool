@@ -50,15 +50,6 @@ jobs:
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "✅ Метаданные релиза Varryal согласованы."
 
-      - name: Проверить наличие changelog
-        run: |
-          CHANGELOG_FILE=".github/changelogs/${GITHUB_REF_NAME}.md"
-          if [ ! -f "$CHANGELOG_FILE" ]; then
-            echo "Ошибка: файл changelog $CHANGELOG_FILE не существует."
-            exit 1
-          fi
-          echo "✅ Changelog найден."
-
       - name: Настроить Node.js 24
         uses: actions/setup-node@v4
         with:
@@ -115,15 +106,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Создать GitHub Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Varryal EML AdminTool ${{ steps.version.outputs.value }}
-          draft: false
-          prerelease: false
-          body_path: .github/changelogs/${{ github.ref_name }}.md
-          files: docker/docker-compose.prod.yml

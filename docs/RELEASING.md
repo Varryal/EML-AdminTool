@@ -25,10 +25,7 @@ npm run release -- 2.8.0-varryal.1
 - проверит, что upstream-часть версии совпадает с `package.json.version`;
 - обновит `varryal.json`;
 - обновит badge версии в README;
-- сгенерирует release Compose;
-- создаст файл changelog в `.github/changelogs/`.
-
-После этого заполните сгенерированный changelog.
+- сгенерирует release Compose.
 
 ## 2. Проверить исходники
 
@@ -58,15 +55,13 @@ Workflow `Релиз Varryal EML AdminTool` остановится с ошибк
 - tag не содержится в `main`;
 - версия tag не совпадает с `varryal.json`;
 - `varryal.json.upstreamVersion` не совпадает с `package.json.version`;
-- отсутствует changelog;
 - проверка исходников не проходит.
 
 Если все проверки успешны, GitHub Actions:
 
 1. собирает Docker image для `linux/amd64` и `linux/arm64`;
 2. публикует `ghcr.io/varryal/eml-admintool:<version>`;
-3. обновляет `ghcr.io/varryal/eml-admintool:varryal-latest`;
-4. создаёт GitHub Release.
+3. обновляет `ghcr.io/varryal/eml-admintool:varryal-latest`.
 
 ## 4. Развернуть релиз отдельно
 
