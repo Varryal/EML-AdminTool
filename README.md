@@ -1,12 +1,16 @@
-# EML AdminTool
+# Varryal EML AdminTool
 
-**EML AdminTool is a Web software to manage a Minecraft Launcher built with [EML Lib](https://github.com/Electron-Minecraft-Launcher/EML-Lib) library.**
+**Varryal EML AdminTool is the maintained Varryal fork of [Electron-Minecraft-Launcher/EML-AdminTool](https://github.com/Electron-Minecraft-Launcher/EML-AdminTool).** It keeps upstream compatibility while carrying Varryal-specific launcher-management features and fixes.
+
+Current fork version: **2.7.0-varryal.3**. Upstream base: **2.7.0**. See [`varryal.json`](./varryal.json) for machine-readable fork metadata and [`docs/UPSTREAM_SYNC.md`](./docs/UPSTREAM_SYNC.md) for the controlled upstream update process.
+
+Direct upstream self-updates are intentionally disabled in this fork. Upstream releases are informational until reviewed, integrated and tested; production deployment is a separate manual Varryal infrastructure action.
 
 ![EML AdminTool](./.github/assets/files-updater.png)
 
 [<img src="https://img.shields.io/badge/Discord-EML-5561e6?&style=for-the-badge">](https://emlproject.com/discord/github)
 [<img src="https://img.shields.io/badge/platforms-Docker-0077DA?style=for-the-badge&color=0077DA">](#platforms)
-[<img src="https://img.shields.io/badge/version-2.7.0-orangered?style=for-the-badge&color=orangered">](package.json)
+[<img src="https://img.shields.io/badge/version-2.7.0--varryal.3-orangered?style=for-the-badge&color=orangered">](varryal.json)
 
 <p>
 <center>
@@ -22,7 +26,7 @@
 
 ### General settings
 
-General settings allow you to manage the identity of your panel, monitor your server's health, manage updates, and most importantly, control who has access to your launcher configuration.
+General settings allow you to manage the identity of your panel, monitor your server's health and upstream release availability, and most importantly, control who has access to your launcher configuration.
 
 _Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/general-settings)._
 
@@ -113,5 +117,5 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to contribute to 
 
 - This repository contains a `.env` file. All the information in this file is fake (random strings), and will be replaced by the real information when you install EML AdminTool.
 - This Web software is under the `GNU AGPLv3` license; to get more information, please read the file `LICENSE`. It is legally obligatory to respect this license.
-- If you need some help, you can join [this Discord](https://emlproject.com/discord/github).
-
+- Varryal-specific releases keep their corresponding source in this repository and retain the upstream license and notices.
+- If you need upstream EML help, you can join [the EML Discord](https://emlproject.com/discord/github).
