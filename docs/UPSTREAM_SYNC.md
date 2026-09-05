@@ -1,41 +1,41 @@
-# Upstream sync policy
+# Правила синхронизации с upstream
 
-`Varryal/EML-AdminTool` is a maintained Varryal fork of `Electron-Minecraft-Launcher/EML-AdminTool`.
+`Varryal/EML-AdminTool` — поддерживаемый форк `Electron-Minecraft-Launcher/EML-AdminTool` для Varryal.
 
-The fork must never auto-merge or auto-deploy an upstream release. Upstream changes can include database migrations, API changes, Docker changes, or UI changes that conflict with Varryal-specific features such as optional mods.
+Форк не должен автоматически сливать или автоматически разворачивать новые upstream-релизы. В upstream могут появиться миграции базы данных, изменения API, Docker или интерфейса, конфликтующие с Varryal-специфичными возможностями, например с опциональными модами.
 
-## Version model
+## Модель версий
 
-Varryal versions use:
+Версии Varryal имеют формат:
 
 ```text
 <upstream-version>-varryal.<revision>
 ```
 
-Examples:
+Примеры:
 
 ```text
 2.7.0-varryal.3
 2.8.0-varryal.1
 ```
 
-`package.json` keeps the upstream application version. `varryal.json` records the Varryal release identity and must have an `upstreamVersion` equal to `package.json.version`.
+`package.json` хранит upstream-версию приложения. `varryal.json` хранит идентификатор релиза Varryal; его `upstreamVersion` должен совпадать с `package.json.version`.
 
-## Sync procedure
+## Процедура синхронизации
 
-1. Identify the exact upstream release/tag to integrate.
-2. Create `upstream-sync/<version>` from the current Varryal `main`.
-3. Merge the selected upstream tag into that branch. Never merge upstream directly into `main`.
-4. Resolve conflicts deliberately, preserving Varryal-specific behavior.
-5. Set `varryal.json` to `<upstream-version>-varryal.1` for a new upstream base.
-6. Review all upstream Prisma schema/migration changes before deployment.
-7. Review compatibility-sensitive areas:
-   - Files Updater manifest/API contracts.
-   - Optional mod metadata and UI.
-   - Loader/profile APIs consumed by VarryalLauncher.
-   - Docker entrypoint, environment and volume expectations.
-   - Authentication, maintenance and updater behavior.
-8. Run:
+1. Определите точный upstream release/tag, который нужно интегрировать.
+2. Создайте ветку `upstream-sync/<version>` от текущего Varryal `main`.
+3. Влейте выбранный upstream tag в эту ветку. Никогда не сливайте upstream напрямую в `main`.
+4. Разрешайте конфликты вручную и осознанно, сохраняя Varryal-специфичное поведение.
+5. Для новой upstream-базы установите в `varryal.json` версию `<upstream-version>-varryal.1`.
+6. До deployment обязательно просмотрите все upstream-изменения Prisma schema/migrations.
+7. Отдельно проверьте области, чувствительные к совместимости:
+   - контракты Files Updater manifest/API;
+   - metadata и UI опциональных модов;
+   - loader/profile API, которые использует VarryalLauncher;
+   - Docker entrypoint, environment и ожидания по volumes;
+   - authentication, maintenance и updater behavior.
+8. Выполните:
 
 ```sh
 npm ci
@@ -44,14 +44,16 @@ npm run check
 npm run build
 ```
 
-9. Open a PR into `main` and review the complete upstream diff plus conflict resolutions.
-10. Merge only after CI passes and migration/API compatibility is understood.
-11. Prepare a Varryal release with `npm run release -- <upstream-version>-varryal.<revision>`.
-12. Tag the reviewed `main` commit. The Release workflow publishes the immutable GHCR image.
-13. Production deployment remains a separate manual action from `VarryalLauncher` infrastructure.
+9. Откройте PR в `main` и просмотрите полный upstream diff вместе со всеми разрешёнными конфликтами.
+10. Выполняйте merge только после успешного CI и понимания изменений миграций/API.
+11. Подготовьте Varryal-релиз командой `npm run release -- <upstream-version>-varryal.<revision>`.
+12. Поставьте tag на проверенный commit из `main`. Workflow релиза опубликует неизменяемый GHCR image.
+13. Production deployment остаётся отдельным ручным действием из инфраструктуры `VarryalLauncher`.
 
-## Deployment rule
+## Правило deployment
 
-An upstream release becoming available is informational only. It must not trigger a production deployment by itself.
+Сам факт появления нового upstream-релиза носит только информационный характер. Он не должен автоматически запускать production deployment.
 
-Production must use an explicitly reviewed image, preferably pinned by digest. Database and persistent data volumes must never be deleted as part of an ordinary application update.
+Production должен использовать явно проверенный image, закреплённый по digest. База данных и постоянные volumes никогда не удаляются в рамках обычного обновления приложения.
+
+Подробная процедура выпуска собственной версии Varryal описана в `docs/RELEASING.md`.
