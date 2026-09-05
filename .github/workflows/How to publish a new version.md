@@ -1,47 +1,64 @@
-# How to publish a new version
+# How to publish a Varryal release
 
-### 1. Update the version number
+Varryal releases use the version format:
 
-Files to check:
-- `package.json`
-- `README.md`
-- `src/lib/locales/**.ts`
-- `docker/docker-compose.dev.yml`, `docker/docker-compose.prod.yml`
-
-### 2. Create a change log file
-
-Copy the template from `.github/changelogs/TEMPLATE.md` and create a new file in `.github/changelogs/` with the version number as the filename (e.g., `v2.0.1.md`).
-Then, fill in the change log with the changes made since the last version.
-
-### 3. Create an install script
-
-Copy the previous install script from `.github/scripts/eml-admintool@X.X.X` and create a new file with the new version number (e.g., `eml-admintool@2.0.1`). Then update the new file with the new version.
-
-<!-- Additionally, the EML AdminTool can run a script before the update. You can create this file and attach it to the release (after step 5) via GitHub. The script extension must be `.sh` and must not start with `._`. -->
-
-### 4. Create a new tag
-
-Push the latest version to the `main` branch. Ensure that CodeQL checks are passing.
-
-Then, create a new tag with the new version number (e.g., `v2.0.1`):
-
-```sh
-git pull
-git tag -a <tag_name> <7-chars_commit_hash> -m "<tag_name>"
-git push origin <tag_name>
+```text
+<upstream-version>-varryal.<revision>
 ```
 
-Wait for the GitHub Actions to run. If everything is fine, you will see a new release in the "Releases" section of the repository.
+Example: `2.8.0-varryal.1`.
 
-### 5. Check everything is working
+`package.json` keeps the upstream EML AdminTool version. `varryal.json` stores the Varryal release version and must reference the same upstream version.
 
-Check the "Release" section of the repository to ensure that the new version is available and that the install script is attached. You can now add an `.sh` if needed.
+## 1. Prepare the release files
 
-### In case of error...
-
-Remove the tag and the release from GitHub, then delete the local tag:
+From a reviewed branch based on the intended upstream version, run:
 
 ```sh
-git pull
-git tag -d <tag_name>
+npm run release -- 2.8.0-varryal.1
 ```
+
+The release script validates that the upstream part of the requested version matches `package.json`, updates `varryal.json` and the README badge, and generates the release compose and changelog file.
+
+Fill in the generated changelog under `.github/changelogs/`.
+
+## 2. Verify the source
+
+Run:
+
+```sh
+npm ci
+npx prisma generate --no-hints
+npm run check
+npm run build
+```
+
+Commit the generated files through a reviewed PR into `main`. Do not tag an unmerged branch.
+
+## 3. Create the tag
+
+After the release preparation PR is merged and CI passes, tag the exact `main` commit:
+
+```sh
+git pull --ff-only
+git tag -a v2.8.0-varryal.1 <commit-sha> -m "v2.8.0-varryal.1"
+git push origin v2.8.0-varryal.1
+```
+
+The `Release Varryal EML AdminTool` workflow will refuse the release if:
+
+- the tag is not contained in `main`;
+- the tag does not match `varryal.json`;
+- `varryal.json.upstreamVersion` does not match `package.json.version`;
+- the changelog is missing;
+- source verification fails.
+
+If verification succeeds, Actions publishes `ghcr.io/varryal/eml-admintool:<version>` and `ghcr.io/varryal/eml-admintool:varryal-latest`, then creates the GitHub Release.
+
+## 4. Deploy separately
+
+Publishing a release does not deploy it to the Varryal VPS. Production deployment remains a separate, manual infrastructure action in `VarryalLauncher` and should pin the selected image by digest.
+
+## Upstream releases
+
+Never tag an upstream version directly in this repository. Follow `docs/UPSTREAM_SYNC.md` first, then start a new Varryal revision from the integrated upstream base.
