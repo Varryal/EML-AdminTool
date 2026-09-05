@@ -1,4 +1,4 @@
-name: CI
+name: CI AdminTool
 
 on:
   pull_request:
@@ -17,27 +17,28 @@ concurrency:
 
 jobs:
   verify:
+    name: Проверка и сборка
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:
-      - name: Checkout
+      - name: Получить исходники
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 24
+      - name: Настроить Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
-      - name: Install dependencies
+      - name: Установить зависимости
         run: npm ci
 
-      - name: Generate Prisma client
+      - name: Сгенерировать Prisma Client
         run: npx prisma generate --no-hints
 
-      - name: Type and Svelte checks
+      - name: Проверить TypeScript и Svelte
         run: npm run check
 
-      - name: Production build
+      - name: Выполнить production-сборку
         run: npm run build
