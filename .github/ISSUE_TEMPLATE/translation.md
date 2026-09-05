@@ -1,21 +1,21 @@
 ---
-name: Translation
-about: Suggest a translation of EML AdminTool
+name: Перевод
+about: Предложить перевод EML AdminTool
 title: "[TRANSLATION]"
 labels: Translation
 assignees: ''
 
 ---
 
-**Language**
+**Язык**
 
-[Please provide your language here (e.g. English)]
+[Укажите язык (например, English)]
 
-**Language code**
+**Код языка**
 
-[Please provide your language code here (e.g. en)]
+[Укажите код языка (например, en)]
 
-**Translation**
+**Перевод**
 ```ts
-[Please provide your translation file content here.]
+[Вставьте содержимое файла перевода.]
 ```

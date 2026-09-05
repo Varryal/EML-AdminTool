@@ -1,10 +1,10 @@
 # Varryal EML AdminTool
 
-**Varryal EML AdminTool is the maintained Varryal fork of [Electron-Minecraft-Launcher/EML-AdminTool](https://github.com/Electron-Minecraft-Launcher/EML-AdminTool).** It keeps upstream compatibility while carrying Varryal-specific launcher-management features and fixes.
+**Varryal EML AdminTool — поддерживаемый форк Varryal проекта [Electron-Minecraft-Launcher/EML-AdminTool](https://github.com/Electron-Minecraft-Launcher/EML-AdminTool).** Он сохраняет совместимость с upstream и содержит функции и исправления Varryal для управления лаунчером.
 
-Current fork version: **2.7.0-varryal.3**. Upstream base: **2.7.0**. See [`varryal.json`](./varryal.json) for machine-readable fork metadata and [`docs/UPSTREAM_SYNC.md`](./docs/UPSTREAM_SYNC.md) for the controlled upstream update process.
+Текущая версия форка: **2.7.0-varryal.3**. База upstream: **2.7.0**. Машиночитаемые метаданные форка находятся в [`varryal.json`](./varryal.json), а контролируемый процесс обновления из upstream описан в [`docs/UPSTREAM_SYNC.md`](./docs/UPSTREAM_SYNC.md).
 
-Direct upstream self-updates are intentionally disabled in this fork. Upstream releases are informational until reviewed, integrated and tested; production deployment is a separate manual Varryal infrastructure action.
+Прямые самообновления из upstream в этом форке намеренно отключены. Релизы upstream носят справочный характер, пока не пройдут review, интеграцию и тестирование; production-развёртывание — отдельное ручное инфраструктурное действие Varryal.
 
 ![EML AdminTool](./.github/assets/files-updater.png)
 
@@ -22,69 +22,69 @@ Direct upstream self-updates are intentionally disabled in this fork. Upstream r
 
 ---
 
-## Features
+## Возможности
 
-### General settings
+### Общие настройки
 
-General settings allow you to manage the identity of your panel, monitor your server's health and upstream release availability, and most importantly, control who has access to your launcher configuration.
+Общие настройки позволяют управлять идентичностью панели, отслеживать работоспособность сервера и доступность релизов upstream, а главное — определять, кто имеет доступ к конфигурации лаунчера.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/general-settings)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/general-settings)._
 
-### Profile management
+### Управление профилями
 
-_Profiles_ allow you to manage different configurations for your launcher. Each profile has its own files, loader configuration, Minecraft version, and server address — completely isolated from the others.
+_Профили_ позволяют управлять разными конфигурациями лаунчера. У каждого профиля собственные файлы, конфигурация загрузчика, версия Minecraft и адрес сервера — полностью изолированные от остальных.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/profiles)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/profiles)._
 
-### Files Updater and Loader
+### Files Updater и Loader
 
-The _Files Updater_ is the heart of your launcher's content management. This is where you decide exactly what your players will download and run. It handles both game content (mods, configs, resource packs) and the game engine (loader) for each profile.
+_Files Updater_ — основа управления содержимым лаунчера. Здесь определяется, что именно игроки будут скачивать и запускать. Он обрабатывает содержимое игры (моды, конфигурации, ресурспаки) и игровой движок (loader) каждого профиля.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/files-updater)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/files-updater)._
 
 ### Bootstraps
 
-The _Bootstraps_ section allows you to manage the updates of the launcher software itself (the executable file), distinct from the game files.
+Раздел _Bootstraps_ позволяет управлять обновлениями самого ПО лаунчера (исполняемого файла) отдельно от игровых файлов.
 
-When you fix a bug in your Electron code or change the design of the launcher interface, you generate a new executable. _Bootstraps_ allows you to distribute that new version to all your players automatically.
+Исправив ошибку в коде Electron или изменив дизайн интерфейса лаунчера, вы создаёте новый исполняемый файл. _Bootstraps_ позволяет автоматически распространить новую версию среди всех игроков.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/bootstraps)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/bootstraps)._
 
-### Maintenance
+### Обслуживание
 
-The _Maintenance_ feature allows you to temporarily block access to the launcher. This is an essential safety tool when you are updating modpacks, fixing critical bugs, or performing server maintenance.
+Функция _Maintenance_ позволяет временно заблокировать доступ к лаунчеру. Это важный инструмент безопасности при обновлении сборок модов, исправлении критических ошибок или обслуживании сервера.
 
-When maintenance is active, players will see a specific screen on their launcher preventing them from launching the game, displaying the reason and the estimated duration of the downtime.
+При активном обслуживании игроки увидят в лаунчере отдельный экран, который не позволит запустить игру и покажет причину и предполагаемую длительность простоя.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/maintenance)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/maintenance)._
 
-### News
+### Новости
 
-The _News_ feature allows you to communicate directly with your players. Articles published will appear on the launcher's home page, allowing you to share changelogs, server events, or maintenance announcements.
+Функция _News_ позволяет напрямую общаться с игроками. Опубликованные статьи появляются на главной странице лаунчера: в них можно рассказывать об изменениях, событиях сервера и обслуживании.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/news)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/news)._
 
-### Background
+### Фон
 
-The _Backgrounds_ feature allows you to customize the visual appearance of your launcher. You can upload multiple images and choose which one is currently displayed to your players.
+Функция _Backgrounds_ позволяет настраивать внешний вид лаунчера. Можно загрузить несколько изображений и выбрать, какое из них сейчас показывать игрокам.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/backgrounds)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/backgrounds)._
 
-### Stats
+### Статистика
 
-The _Stats_ feature allows you to monitor the usage of your launcher. You can see how many players are using it, which profiles are the most popular, and understand the overall engagement of your community.
+Функция _Stats_ позволяет отслеживать использование лаунчера. Вы увидите, сколько игроков им пользуется, какие профили популярнее всего, и оцените вовлечённость сообщества.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/stats)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/stats)._
 
-### Crash Reports
+### Отчёты о сбоях
 
-The _Crash Reports_ feature allows you to collect and analyze crash reports from your players. This is crucial for identifying bugs and improving the stability of your modpack.
+Функция _Crash Reports_ позволяет собирать и анализировать отчёты игроков о сбоях. Это важно для поиска ошибок и повышения стабильности сборки модов.
 
-_Read the [docs](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/crash-reports)._
+_См. [документацию](https://emlproject.pages.dev/docs/eml-admintool/administration-and-features/crash-reports)._
 
-## Comparison with other approaches
+## Сравнение с другими подходами
 
-Managing a modpack server-side can be done in several ways. Here is how EML AdminTool compares to common alternatives.
+Управлять сборкой модов на стороне сервера можно несколькими способами. Ниже EML AdminTool сравнивается с распространёнными альтернативами.
 
 | Approach                                            | Setup effort              | Update workflow                                | Access control                    | Maintenance mode | News & background | Works without EML Lib        |
 | --------------------------------------------------- | ------------------------- | ---------------------------------------------- | --------------------------------- | ---------------- | ----------------- | ---------------------------- |
@@ -94,28 +94,28 @@ Managing a modpack server-side can be done in several ways. Here is how EML Admi
 | **CurseForge / Modrinth**                           | None                      | Platform-managed                               | Platform-managed                  | No               | No                | Yes (platform launcher only) |
 | **Pterodactyl + scripts**                           | High                      | Via SSH / scripts                              | Pterodactyl users                 | Manual           | None              | Yes                          |
 
-### When to use EML AdminTool
+### Когда использовать EML AdminTool
 
-EML AdminTool is the right choice if you want to:
+EML AdminTool подходит, если вы хотите:
 
-- manage multiple Minecraft instances (Profiles) from a single interface,
-- give staff members scoped access to specific profiles without giving them server access,
-- push modpack updates without touching your launcher code,
-- display news or maintenance messages inside your launcher.
+- управлять несколькими экземплярами Minecraft (Profiles) из одного интерфейса;
+- давать сотрудникам ограниченный доступ к конкретным профилям без доступа к серверу;
+- выпускать обновления сборки модов, не меняя код лаунчера;
+- показывать новости или сообщения об обслуживании внутри лаунчера.
 
-If you only need to distribute a static modpack without a backend, EML Lib's [agnostic mode](https://emlproject.com/docs/launch-settings) with a self-hosted JSON file is a simpler alternative — no EML AdminTool required.
+Если нужно лишь распространять статичную сборку модов без backend, более простой альтернативой станет [agnostic mode](https://emlproject.com/docs/launch-settings) EML Lib с самостоятельно размещённым JSON-файлом — EML AdminTool не нужен.
 
-## Installation
+## Установка
 
-EML AdminTool requires Docker to be installed on your system. Please follow [this guide](https://emlproject.com/docs/) to install Docker and EML AdminTool.
+Для EML AdminTool в системе должен быть установлен Docker. Следуйте [этому руководству](https://emlproject.com/docs/) для установки Docker и EML AdminTool.
 
-## Contributing
+## Участие в разработке
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to contribute to this project.
+Правила участия в проекте приведены в [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Important information
+## Важная информация
 
-- This repository contains a `.env` file. All the information in this file is fake (random strings), and will be replaced by the real information when you install EML AdminTool.
-- This Web software is under the `GNU AGPLv3` license; to get more information, please read the file `LICENSE`. It is legally obligatory to respect this license.
-- Varryal-specific releases keep their corresponding source in this repository and retain the upstream license and notices.
-- If you need upstream EML help, you can join [the EML Discord](https://emlproject.com/discord/github).
+- Этот репозиторий содержит файл `.env`. Все данные в нём фиктивные (случайные строки) и будут заменены реальными при установке EML AdminTool.
+- Это веб-приложение лицензировано по `GNU AGPLv3`; подробности приведены в `LICENSE`. Соблюдение этой лицензии обязательно.
+- Исходный код релизов, специфичных для Varryal, сохраняется в этом репозитории вместе с лицензией и уведомлениями upstream.
+- За помощью по upstream EML можно обратиться в [Discord EML](https://emlproject.com/discord/github).
