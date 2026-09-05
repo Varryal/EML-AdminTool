@@ -1,4 +1,4 @@
-name: CI AdminTool
+name: CI панель
 
 on:
   pull_request:
