@@ -1,43 +1,34 @@
-## Changelog
+## Список изменений
 
-### Removed features
+### Удалено
 
-- Removed feature
+- Удалённая возможность
 
-### New features
+### Новые возможности
 
-- Added new feature
-- Added another new feature
-- Added yet another new feature
+- Новая возможность
 
-### Changes
+### Изменения
 
-- Changed something
-- Changed something else
-- Changed yet something else
+- Изменение поведения или интерфейса
 
-### Bug fixes and improvements
+### Исправления и улучшения
 
-- Fixed a bug
-- Fixed another bug
-- Fixed yet another bug
+- Исправленная ошибка или улучшение
 
-### Known issues
+### Известные проблемы
 
-- Known issue
-- Another known issue
+- Известная проблема, если есть
 
-## How to upgrade
+## Развёртывание
 
-### First-time setup
+Этот Varryal-релиз **не устанавливается через встроенное самообновление AdminTool** и не разворачивается на VDS автоматически после публикации.
 
-Please follow [this guide](https://emlproject.com/docs/eml-admintool/system-requirements) to install EML AdminTool for the first time.
+После успешного GitHub Release:
 
-### Upgrading from a previous version
+1. получите точный `sha256` digest опубликованного `ghcr.io/varryal/eml-admintool:<version>`;
+2. обновите production pin в `VarryalLauncher/infra/compose/compose.prod.yml` до `<version>@sha256:<digest>`;
+3. проверьте изменение через PR/CI;
+4. вручную запустите workflow `EML AdminTool — PROD-релиз` в `VarryalLauncher`.
 
-1. Log in to EML AdminTool as administrator.
-2. Click on the "Settings" tab.
-3. Scroll down to the "Update" section.
-4. Click on the "Update" button and wait for the update to complete.
-
-Please note that EML AdminTool will not be available during the update process. We recommend that you perform the update during off-peak hours to minimize disruption to your users.
+Постоянные PostgreSQL/data/files/env volumes при обычном обновлении не удаляются. Перед обновлением, которое может менять Prisma schema или данные, выполните backup и процедуру проверки восстановления из runbook `VarryalLauncher/docs/runbooks/deploy.md`.
