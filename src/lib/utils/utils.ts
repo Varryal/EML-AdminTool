@@ -64,6 +64,22 @@ export function getDomain(event: RequestEvent): string {
 }
 
 /**
+ * Classify a file from exact path segments, not from substring prefixes.
+ * The order is part of the published files contract.
+ */
+export function getFileTypeFromPath(filePath: string): 'ASSET' | 'LIBRARY' | 'MOD' | 'CONFIG' | 'BOOTSTRAP' | 'BACKGROUND' | 'IMAGE' | 'OTHER' {
+  const segments = filePath.replaceAll('\\', '/').split('/').filter(Boolean)
+  if (segments.includes('assets')) return 'ASSET'
+  if (segments.includes('lib')) return 'LIBRARY'
+  if (segments.includes('mods')) return 'MOD'
+  if (segments.includes('config')) return 'CONFIG'
+  if (segments.includes('bootstraps')) return 'BOOTSTRAP'
+  if (segments.includes('backgrounds')) return 'BACKGROUND'
+  if (segments.includes('images')) return 'IMAGE'
+  return 'OTHER'
+}
+
+/**
  * Returns the appropriate FontAwesome icon class for a given file based on its type or extension.
  * @param file The file object containing its name and type.
  */

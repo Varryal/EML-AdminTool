@@ -5,7 +5,22 @@ import { error, redirect, type Actions } from '@sveltejs/kit'
 import { fail } from '$lib/server/action'
 import { NotificationCode } from '$lib/utils/notifications'
 import { createFileSchema, editFileSchema, renameFileSchema, loaderSchema, deleteFilesSchema } from '$lib/utils/validations'
-import { cacheFiles, createFile, deleteFile, editFile, getCachedFilesParsed, getFiles, moveFile, renameFile, sanitizePath, saveOptionalModMetadata } from '$lib/server/files'
+import {
+  cacheFiles,
+  createFile,
+  deleteFile,
+  deleteOptionalProfileState,
+  editFile,
+  getCachedFilesParsed,
+  getFiles,
+  getOptionalModGroups,
+  getOptionalModsRevision,
+  moveFile,
+  renameFile,
+  renameOptionalProfileState,
+  sanitizePath,
+  saveOptionalModMetadata
+} from '$lib/server/files'
 import { BusinessError, ServerError } from '$lib/utils/errors'
 import { db } from '$lib/server/db'
 import { ILoaderType } from '$lib/utils/db'
@@ -19,6 +34,7 @@ import { getMissingLibrariesFromVersion, rewriteAssetIndexUrls, rewriteManifestU
 import fs from 'node:fs/promises'
 import path_ from 'node:path'
 import { existsSync } from 'node:fs'
+import { OptionalModsError, withProfileMutations } from '$lib/server/optional-mods'
 
 export const load = (async (event) => {
   const domain = getDomain(event)
@@ -68,7 +84,8 @@ export const load = (async (event) => {
           updatedAt: new Date()
         } as Loader)
 
-    return { profiles, loader, loaderList, fabricLoaderVersions, quiltLoaderVersions, files }
+    const optionalModsGroups = await getOptionalModGroups(selectedProfile.slug)
+    return { profiles, loader, loaderList, fabricLoaderVersions, quiltLoaderVersions, files, optionalModsGroups, optionalModsRevision: getOptionalModsRevision(files) }
   } catch (err) {
     if (err instanceof ServerError) throw error(err.httpStatus, { message: err.code })
 
@@ -105,13 +122,16 @@ export const actions: Actions = {
       const profile = await resolveProfile(profileId, user.id, user.isAdmin)
       const dir = `files-updater/${profile.slug}` as FileDir
 
-      await renameFile(dir, path, name, newName)
-      await cacheFiles(dir)
+      await withProfileMutations(profile.slug, async () => {
+        await renameFile(dir, path, name, newName)
+        await cacheFiles(dir)
+      })
 
       const files = await getFiles(domain, dir)
       return { files }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       if (err instanceof ServerError) throw error(err.httpStatus, { message: err.message })
 
       console.error('Unknown error:', err)
@@ -145,13 +165,16 @@ export const actions: Actions = {
       const profile = await resolveProfile(profileId, user.id, user.isAdmin)
       const dir = `files-updater/${profile.slug}` as FileDir
 
-      await createFile(dir, path, name)
-      await cacheFiles(dir)
+      await withProfileMutations(profile.slug, async () => {
+        await createFile(dir, path, name)
+        await cacheFiles(dir)
+      })
 
       const files = await getFiles(domain, dir)
       return { files }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       if (err instanceof ServerError) throw error(err.httpStatus, { message: err.message })
 
       console.error('Unknown error:', err)
@@ -186,13 +209,16 @@ export const actions: Actions = {
       const profile = await resolveProfile(profileId, user.id, user.isAdmin)
       const dir = `files-updater/${profile.slug}` as FileDir
 
-      await editFile(dir, path, name, content)
-      await cacheFiles(dir)
+      await withProfileMutations(profile.slug, async () => {
+        await editFile(dir, path, name, content)
+        await cacheFiles(dir)
+      })
 
       const files = await getFiles(domain, dir)
       return { files }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       if (err instanceof ServerError) throw error(err.httpStatus, { message: err.message })
 
       console.error('Unknown error:', err)
@@ -225,17 +251,20 @@ export const actions: Actions = {
       const profile = await resolveProfile(profileId, user.id, user.isAdmin)
       const dir = `files-updater/${profile.slug}` as FileDir
 
-      for (const path of paths) {
-        if (typeof path !== 'string') continue
-        await deleteFile(dir, path)
-      }
+      await withProfileMutations(profile.slug, async () => {
+        for (const path of paths) {
+          if (typeof path !== 'string') continue
+          await deleteFile(dir, path)
+        }
 
-      await cacheFiles(dir)
+        await cacheFiles(dir)
+      })
 
       const cache = await getCachedFilesParsed(domain, dir)
       return { files: cache }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       if (err instanceof ServerError) throw error(err.httpStatus, { message: err.message })
 
       console.error('Unknown error:', err)
@@ -250,18 +279,48 @@ export const actions: Actions = {
     const form = await event.request.formData()
     const profileId = form.get('profile-id')
     const rawMetadata = form.get('metadata')
-    if (typeof profileId !== 'string' || typeof rawMetadata !== 'string') return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+    const revision = form.get('revision')
+    const rawRemoveGroupIds = form.get('remove-group-ids')
+    if (typeof profileId !== 'string' || typeof rawMetadata !== 'string' || typeof revision !== 'string' || revision.length !== 64) {
+      return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+    }
+
+    let metadata: unknown
+    try {
+      metadata = JSON.parse(rawMetadata)
+    } catch {
+      return fail(event, 400, { failure: 'OPTIONAL_METADATA_INVALID' })
+    }
+
+    let removeGroupIds: string[] = []
+    if (rawRemoveGroupIds !== null) {
+      if (typeof rawRemoveGroupIds !== 'string') return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+      try {
+        const parsed = JSON.parse(rawRemoveGroupIds)
+        if (!Array.isArray(parsed) || parsed.some((value) => typeof value !== 'string')) {
+          return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+        }
+        removeGroupIds = parsed
+      } catch {
+        return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+      }
+    }
+
     try {
       const profile = await resolveProfile(profileId, user.id, user.isAdmin, 1)
-      const metadata = JSON.parse(rawMetadata) as Record<string, import('$lib/utils/types').OptionalModMetadata>
-      const currentFiles = await getFiles(domain, `files-updater/${profile.slug}` as FileDir)
-      await saveOptionalModMetadata(profile.slug, metadata, currentFiles)
-      await cacheFiles(`files-updater/${profile.slug}` as FileDir)
+      await withProfileMutations(profile.slug, async () => {
+        const currentFiles = await getFiles(domain, `files-updater/${profile.slug}` as FileDir)
+        if (getOptionalModsRevision(currentFiles) !== revision) {
+          throw new OptionalModsError('OPTIONAL_MODS_CONFLICT', 'Optional mod settings changed', 409)
+        }
+        await saveOptionalModMetadata(profile.slug, metadata, currentFiles, removeGroupIds)
+      })
       return { ok: true }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       console.error('Failed to save optional mod metadata:', err)
-      return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
+      return fail(event, 500, { failure: NotificationCode.INTERNAL_SERVER_ERROR })
     }
   },
 
