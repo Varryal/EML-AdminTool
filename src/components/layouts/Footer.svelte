@@ -12,7 +12,9 @@
     <span class="version" aria-label={formatVersionLabel(env)}>
       EML AdminTool {env.varryalVersion} ·
       <span class="channel" class:preprod={env.channel === 'preprod'} class:prod={env.channel === 'prod'}>{env.channel.toUpperCase()}</span>
-      · {env.buildId}
+      {#if env.channel === 'preprod'}
+        · {env.buildId}
+      {/if}
     </span>
     <br />
     <span class="links">
