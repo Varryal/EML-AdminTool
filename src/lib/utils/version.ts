@@ -43,5 +43,6 @@ export function resolveVersionMetadata(fallbackVarryalVersion: string, environme
 
 export function formatVersionLabel(metadata: VersionMetadata): string {
   const channelLabel = metadata.channel === 'preprod' ? 'PREPROD' : 'PROD'
-  return `EML AdminTool ${metadata.varryalVersion} · ${channelLabel} · ${metadata.buildId}`
+  const buildLabel = metadata.channel === 'preprod' ? ` · ${metadata.buildId}` : ''
+  return `EML AdminTool ${metadata.varryalVersion} · ${channelLabel}${buildLabel}`
 }
