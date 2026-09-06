@@ -155,7 +155,7 @@
 <h2>Files Updater</h2>
 
 {#if showOptionalModsModal}
-  <OptionalModsModal bind:show={showOptionalModsModal} {selectedProfile} files={data.files} />
+  <OptionalModsModal bind:show={showOptionalModsModal} {selectedProfile} files={data.files} groups={data.optionalModsGroups} revision={data.optionalModsRevision} />
 {/if}
 
 {#if data.profiles.length > 1}

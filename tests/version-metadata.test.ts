@@ -35,7 +35,7 @@ test('production metadata has safe repository fallbacks', () => {
     varryalVersion: '2.7.0-varryal.1',
     buildId: 'release-2.7.0-varryal.1'
   })
-  assert.equal(formatVersionLabel(metadata), 'EML AdminTool 2.7.0-varryal.1 · PROD · release-2.7.0-varryal.1')
+  assert.equal(formatVersionLabel(metadata), 'EML AdminTool 2.7.0-varryal.1 · PROD')
 })
 
 test('invalid deployment metadata is rejected instead of being displayed as production', () => {

@@ -7,6 +7,7 @@ import { activeUploads, STAGING_DIR } from '$lib/server/uploader'
 import { cacheFiles, getCachedFilesParsed } from '$lib/server/files'
 import type { RequestHandler } from './$types'
 import type { Context } from '$lib/utils/types'
+import { withProfileMutations } from '$lib/server/optional-mods'
 
 async function getFileSha256(filePath: string) {
   const hash = crypto.createHash('sha256')
@@ -73,23 +74,28 @@ export const POST: RequestHandler = async ({ request, url, locals }) => {
       return json({ status: 'FAILURE', reason: 'CHECKSUM_MISMATCH' }, { status: 400 })
     }
 
-    await fs.mkdir(path.dirname(lock.targetPath), { recursive: true })
-    await fs.rename(partPath, lock.targetPath)
+    const commit = async () => {
+      await fs.mkdir(path.dirname(lock.targetPath), { recursive: true })
+      await fs.rename(partPath, lock.targetPath)
 
-    activeUploads.delete(targetPathKey)
-    await cacheFiles(context)
+      activeUploads.delete(targetPathKey)
+      await cacheFiles(context)
 
-    const domain = url.origin
-    const allFiles = await getCachedFilesParsed(domain, context)
+      const domain = url.origin
+      const allFiles = await getCachedFilesParsed(domain, context)
 
-    const relativePath = lock.targetPath.split(`files/${context}/`)[1]
-    const dirPath = path.dirname(relativePath)
-    const formattedDirPath = dirPath === '.' ? '' : `${dirPath}/`.replace(/\\/g, '/')
-    const fileName = path.basename(relativePath)
+      const relativePath = lock.targetPath.split(`files/${context}/`)[1]
+      const dirPath = path.dirname(relativePath)
+      const formattedDirPath = dirPath === '.' ? '' : `${dirPath}/`.replace(/\\/g, '/')
+      const fileName = path.basename(relativePath)
 
-    const newlyCreatedFile = allFiles.find((f) => f.name === fileName && f.path === formattedDirPath)
+      const newlyCreatedFile = allFiles.find((f) => f.name === fileName && f.path === formattedDirPath)
 
-    return json({ status: 'SUCCESS', file: newlyCreatedFile })
+      return json({ status: 'SUCCESS', file: newlyCreatedFile })
+    }
+
+    const optionalSlug = context.startsWith('files-updater/') ? context.slice('files-updater/'.length) : undefined
+    return optionalSlug ? withProfileMutations(optionalSlug, commit) : commit()
   } catch (err) {
     await abortAndCleanup(targetPathKey, partPath)
     console.error('Error during commit:', err)

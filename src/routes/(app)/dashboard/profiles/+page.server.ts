@@ -8,7 +8,7 @@ import { profileUserPermissionsSchema, profileSchema } from '$lib/utils/validati
 import { fail } from '$lib/server/action'
 import { addProfile, getProfileById, updateProfileUserPermissions, updateProfile, deleteProfile } from '$lib/server/profile'
 import { IUserStatus, type ProfilePayload } from '$lib/utils/db'
-import { cacheFiles, deleteFile, renameFile, sanitizePath } from '$lib/server/files'
+import { deleteFile, deleteOptionalProfileState, renameFile, renameOptionalProfileState, sanitizePath } from '$lib/server/files'
 import { deleteLoader, getLoader, updateLoader } from '$lib/server/loader'
 import bcrypt from 'bcrypt'
 import { ProfileVisibility } from '@prisma/client'
@@ -16,6 +16,7 @@ import { existsSync } from 'node:fs'
 import { computeSha1Hash, getDomain } from '$lib/utils/utils'
 import fs from 'node:fs/promises'
 import path_ from 'node:path'
+import { OptionalModsError, withProfileMutations } from '$lib/server/optional-mods'
 
 export const load = (async (event) => {
   const user = event.locals.user
@@ -142,13 +143,19 @@ export const actions: Actions = {
           return fail(event, 400, { failure: NotificationCode.INVALID_INPUT })
         }
 
-        await updateProfile(profileId, profile)
+        const optionalStateRenamed = slug !== existingProfile.slug
+        if (slug !== existingProfile.slug) {
+          await renameOptionalProfileState(existingProfile.slug, slug)
+        }
+
+        try {
+          await updateProfile(profileId, profile)
+        } catch (err) {
+          if (optionalStateRenamed) await renameOptionalProfileState(slug, existingProfile.slug).catch(() => {})
+          throw err
+        }
 
         if (slug !== existingProfile.slug) {
-          await renameFile('files-updater', '', existingProfile.slug, slug, false)
-          await deleteFile('cache', `files-updater-${existingProfile.slug}.json`, false)
-          await cacheFiles(`files-updater/${slug}`)
-
           const oldLoaderPath = sanitizePath('files', 'loaders', existingProfile.slug)
 
           if (existsSync(oldLoaderPath)) {
@@ -211,6 +218,7 @@ export const actions: Actions = {
       }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.code })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       if (err instanceof ServerError) throw error(err.httpStatus, { message: err.code })
 
       console.error('Unknown error:', err)
@@ -243,13 +251,17 @@ export const actions: Actions = {
         return fail(event, 403, { failure: NotificationCode.FORBIDDEN })
       }
 
-      await deleteLoader(existingProfile.id)
-      await deleteFile('files-updater', existingProfile.slug, false)
-      await deleteFile('loaders', existingProfile.slug, false)
-      await deleteFile('cache', `files-updater-${existingProfile.slug}.json`, false)
+      await withProfileMutations(existingProfile.slug, async () => {
+        await deleteOptionalProfileState(existingProfile.slug)
+        await deleteLoader(existingProfile.id)
+        await deleteFile('files-updater', existingProfile.slug, false)
+        await deleteFile('loaders', existingProfile.slug, false)
+        await deleteFile('cache', `files-updater-${existingProfile.slug}.json`, false)
+      })
       await deleteProfile(profileId)
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.code })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
       if (err instanceof ServerError) throw error(err.httpStatus, { message: err.code })
 
       console.error('Unknown error:', err)
