@@ -23,10 +23,10 @@ export const l: Readable<CallableTranslation<TranslationObject>> = derived(curre
   return createTranslationProxy(selected, languages.en)
 })
 
-function interpolate(text: string, vars: Record<string, string | number>): string {
+export function interpolate(text: string, vars: Record<string, string | number>): string {
   if (!text || !vars) return text
-  return text.replace(/{{(\w+)}}/g, (_, key) => {
-    return vars[key] !== undefined ? String(vars[key]) : `{${key}}`
+  return text.replace(/{{(\w+)}}/g, (token, key) => {
+    return vars[key] !== undefined ? String(vars[key]) : token
   })
 }
 

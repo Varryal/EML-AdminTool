@@ -14,7 +14,6 @@ import {
   getCachedFilesParsed,
   getFiles,
   getOptionalModGroups,
-  getOptionalModsRevision,
   moveFile,
   renameFile,
   renameOptionalProfileState,
@@ -35,6 +34,7 @@ import fs from 'node:fs/promises'
 import path_ from 'node:path'
 import { existsSync } from 'node:fs'
 import { OptionalModsError, withProfileMutations } from '$lib/server/optional-mods'
+import { computePublishedOptionalModsRevision } from '$lib/server/optional-mods-revision'
 
 export const load = (async (event) => {
   const domain = getDomain(event)
@@ -85,7 +85,7 @@ export const load = (async (event) => {
         } as Loader)
 
     const optionalModsGroups = await getOptionalModGroups(selectedProfile.slug)
-    return { profiles, loader, loaderList, fabricLoaderVersions, quiltLoaderVersions, files, optionalModsGroups, optionalModsRevision: getOptionalModsRevision(files) }
+    return { profiles, loader, loaderList, fabricLoaderVersions, quiltLoaderVersions, files, optionalModsGroups, optionalModsRevision: computePublishedOptionalModsRevision(files) }
   } catch (err) {
     if (err instanceof ServerError) throw error(err.httpStatus, { message: err.code })
 
@@ -309,16 +309,36 @@ export const actions: Actions = {
     try {
       const profile = await resolveProfile(profileId, user.id, user.isAdmin, 1)
       await withProfileMutations(profile.slug, async () => {
-        const currentFiles = await getFiles(domain, `files-updater/${profile.slug}` as FileDir)
-        if (getOptionalModsRevision(currentFiles) !== revision) {
-          throw new OptionalModsError('OPTIONAL_MODS_CONFLICT', 'Optional mod settings changed', 409)
+        // Revision is deliberately based on the published cache, the same representation
+        // used by load. A live disk scan can legitimately differ while a cache rebuild is
+        // pending and must not create a false conflict in the editor.
+        const currentFiles = await getCachedFilesParsed(domain, `files-updater/${profile.slug}` as FileDir)
+        const currentRevision = computePublishedOptionalModsRevision(currentFiles)
+        if (currentRevision !== revision) {
+          throw new OptionalModsError(
+            'OPTIONAL_MODS_CONFLICT',
+            'Optional mod settings changed',
+            409,
+            undefined,
+            {
+              revision: currentRevision,
+              files: currentFiles,
+              groups: await getOptionalModGroups(profile.slug)
+            }
+          )
         }
         await saveOptionalModMetadata(profile.slug, metadata, currentFiles, removeGroupIds)
       })
-      return { ok: true }
+      const files = await getCachedFilesParsed(domain, `files-updater/${profile.slug}` as FileDir)
+      return {
+        ok: true,
+        revision: computePublishedOptionalModsRevision(files),
+        files,
+        groups: await getOptionalModGroups(profile.slug)
+      }
     } catch (err) {
       if (err instanceof BusinessError) return fail(event, err.httpStatus, { failure: err.message })
-      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code })
+      if (err instanceof OptionalModsError) return fail(event, err.httpStatus, { failure: err.code, ...err.responseFields })
       console.error('Failed to save optional mod metadata:', err)
       return fail(event, 500, { failure: NotificationCode.INTERNAL_SERVER_ERROR })
     }
