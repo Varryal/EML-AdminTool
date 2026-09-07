@@ -32,6 +32,7 @@
 
   let showChangeLoaderModal = $state(false)
   let showOptionalModsModal = $state(false)
+  let optionalRevision = $state('')
 
   let currentPathSplit = $derived(currentPath.split('/'))
 
@@ -126,6 +127,12 @@
   })
 
   $effect(() => {
+    // Keep the mounted editor's revision aligned with a refreshed page snapshot.
+    // The modal itself rebases unsaved edits when this value changes.
+    optionalRevision = data.optionalModsRevision
+  })
+
+  $effect(() => {
     if (oldPath !== path!.innerHTML) {
       oldPath = path!.innerHTML
       path!.scrollLeft = path!.scrollWidth
@@ -155,7 +162,7 @@
 <h2>Files Updater</h2>
 
 {#if showOptionalModsModal}
-  <OptionalModsModal bind:show={showOptionalModsModal} {selectedProfile} files={data.files} groups={data.optionalModsGroups} revision={data.optionalModsRevision} />
+  <OptionalModsModal bind:show={showOptionalModsModal} {selectedProfile} files={data.files} groups={data.optionalModsGroups} revision={optionalRevision} />
 {/if}
 
 {#if data.profiles.length > 1}
